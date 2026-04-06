@@ -54,7 +54,7 @@ app.get('/api/health', (c) => {
   return c.json({ ok: true, timestamp: new Date().toISOString() });
 });
 
-const port = parseInt(process.env.API_PORT || '3456', 10);
+const port = parseInt(process.env.PORT || process.env.API_PORT || '3456', 10);
 
 serve({ fetch: app.fetch, port }, () => {
   console.log(`📊 API server running on http://localhost:${port}`);

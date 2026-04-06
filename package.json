@@ -11,6 +11,7 @@
     "dev:all": "concurrently \"npm run dev:bot\" \"npm run dev:api\" \"npm run dev:dashboard\"",
     "db:init": "tsx src/db/init.ts",
     "build": "tsc",
+    "start": "concurrently \"node --import tsx/esm src/bot/index.ts\" \"node --import tsx/esm src/api/index.ts\"",
     "start:bot": "node dist/bot/index.js",
     "start:api": "node dist/api/index.js"
   },
