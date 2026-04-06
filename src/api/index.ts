@@ -1,7 +1,8 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { serve } from '@hono/node-server';
-import { getInvoices, getStats, deleteInvoice, getDistinctUsers, updateInvoiceCategory } from '../db/index.js';
+import fs from 'fs';
+import { getInvoices, getStats, deleteInvoice, getDistinctUsers, updateInvoiceCategory, getInvoiceById } from '../db/index.js';
 
 const app = new Hono();
 
@@ -71,6 +72,27 @@ app.delete('/api/invoices/:id', (c) => {
     return c.json({ ok: true });
   }
   return c.json({ ok: false, error: 'Not found' }, 404);
+});
+
+// Serve invoice image
+app.get('/api/invoices/:id/image', (c) => {
+  const id = parseInt(c.req.param('id'), 10);
+  if (isNaN(id)) {
+    return c.json({ ok: false, error: 'Invalid ID' }, 400);
+  }
+  const invoice = getInvoiceById(id);
+  if (!invoice || !invoice.image_path) {
+    return c.json({ ok: false, error: 'Not found' }, 404);
+  }
+  try {
+    const data = fs.readFileSync(invoice.image_path);
+    const ext = invoice.image_path.split('.').pop()?.toLowerCase() || 'jpg';
+    const mimeMap: Record<string, string> = { jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp' };
+    const mime = mimeMap[ext] || 'image/jpeg';
+    return new Response(data, { headers: { 'Content-Type': mime, 'Cache-Control': 'public, max-age=86400' } });
+  } catch {
+    return c.json({ ok: false, error: 'Image file not found' }, 404);
+  }
 });
 
 // Health check

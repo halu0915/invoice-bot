@@ -46,6 +46,10 @@ export const CATEGORIES = [
 
 export type Category = (typeof CATEGORIES)[number];
 
+export function getImageUrl(invoiceId: number): string {
+  return `${API_BASE}/api/invoices/${invoiceId}/image`;
+}
+
 // ---------- fetch helpers ----------
 
 export async function fetchInvoices(params: {

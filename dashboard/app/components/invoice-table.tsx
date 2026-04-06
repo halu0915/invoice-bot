@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from "react";
 import type { Invoice } from "@/app/lib/api";
-import { CATEGORIES, deleteInvoice, updateCategory } from "@/app/lib/api";
+import { CATEGORIES, deleteInvoice, updateCategory, getImageUrl } from "@/app/lib/api";
 
 function fmt(n: number): string {
   return n.toLocaleString("zh-TW", { minimumFractionDigits: 0 });
@@ -20,6 +20,7 @@ export default function InvoiceTable({
   const [categoryFilter, setCategoryFilter] = useState("");
   const [companyOnly, setCompanyOnly] = useState(false);
   const [deleting, setDeleting] = useState<number | null>(null);
+  const [previewId, setPreviewId] = useState<number | null>(null);
 
   const handleDelete = useCallback(
     async (id: number) => {
@@ -104,6 +105,7 @@ export default function InvoiceTable({
         <table className="w-full text-left text-sm">
           <thead>
             <tr className="border-b border-gray-100 bg-gray-50 text-xs uppercase text-gray-500">
+              <th className="px-4 py-3 text-center">圖片</th>
               <th className="px-4 py-3">ID</th>
               <th className="px-4 py-3">日期</th>
               <th className="px-4 py-3">商家</th>
@@ -117,14 +119,14 @@ export default function InvoiceTable({
           <tbody>
             {!filtered && (
               <tr>
-                <td colSpan={8} className="px-4 py-12 text-center text-gray-400">
+                <td colSpan={9} className="px-4 py-12 text-center text-gray-400">
                   載入中...
                 </td>
               </tr>
             )}
             {filtered && filtered.length === 0 && (
               <tr>
-                <td colSpan={8} className="px-4 py-12 text-center text-gray-400">
+                <td colSpan={9} className="px-4 py-12 text-center text-gray-400">
                   無符合條件的發票
                 </td>
               </tr>
@@ -134,6 +136,16 @@ export default function InvoiceTable({
                 key={inv.id}
                 className="border-b border-gray-50 transition-colors hover:bg-gray-50"
               >
+                <td className="px-4 py-3 text-center">
+                  <button
+                    type="button"
+                    onClick={() => setPreviewId(inv.id)}
+                    className="text-blue-500 hover:text-blue-700 text-xs"
+                    title="查看發票圖片"
+                  >
+                    📷
+                  </button>
+                </td>
                 <td className="px-4 py-3 font-mono text-gray-400">{inv.id}</td>
                 <td className="px-4 py-3 whitespace-nowrap">{inv.date}</td>
                 <td className="px-4 py-3 max-w-[200px] truncate" title={inv.vendor}>
@@ -187,6 +199,32 @@ export default function InvoiceTable({
           </tbody>
         </table>
       </div>
+
+      {/* Image preview modal */}
+      {previewId !== null && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+          onClick={() => setPreviewId(null)}
+        >
+          <div
+            className="relative max-h-[90vh] max-w-2xl overflow-auto rounded-xl bg-white p-2 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={() => setPreviewId(null)}
+              className="absolute right-3 top-3 z-10 rounded-full bg-white/80 px-2.5 py-1 text-sm font-bold text-gray-600 shadow hover:bg-gray-100"
+            >
+              ✕
+            </button>
+            <img
+              src={getImageUrl(previewId)}
+              alt={`發票 #${previewId}`}
+              className="max-h-[85vh] w-auto rounded-lg"
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
