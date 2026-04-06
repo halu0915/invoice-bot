@@ -8,6 +8,10 @@ import { fetchInvoices, fetchStats, fetchUsers, exportInvoicesToCsv } from "@/ap
 import type { Invoice, Stats, User } from "@/app/lib/api";
 
 function getMonthRange(year: number, month: number) {
+  if (month === 0) {
+    // Full year
+    return { start: `${year}-01-01`, end: `${year}-12-31` };
+  }
   const start = `${year}-${String(month).padStart(2, "0")}-01`;
   const lastDay = new Date(year, month, 0).getDate();
   const end = `${year}-${String(month).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
@@ -33,7 +37,7 @@ const MONTH_LABELS = [
 export default function Home() {
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
-  const [month, setMonth] = useState(now.getMonth() + 1);
+  const [month, setMonth] = useState(now.getMonth() + 1); // 0 = full year
   const [stats, setStats] = useState<Stats | null>(null);
   const [invoices, setInvoices] = useState<Invoice[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -78,18 +82,20 @@ export default function Home() {
   }, [loadData]);
 
   function prevMonth() {
-    if (month === 1) {
+    if (month === 0) {
       setYear((y) => y - 1);
-      setMonth(12);
+    } else if (month === 1) {
+      setMonth(0); // go to full year
     } else {
       setMonth((m) => m - 1);
     }
   }
 
   function nextMonth() {
-    if (month === 12) {
+    if (month === 0) {
       setYear((y) => y + 1);
-      setMonth(1);
+    } else if (month === 12) {
+      setMonth(0); // go to full year
     } else {
       setMonth((m) => m + 1);
     }
@@ -138,6 +144,7 @@ export default function Home() {
             onChange={(e) => setMonth(parseInt(e.target.value, 10))}
             className="rounded-lg border border-gray-300 bg-white px-2 py-1.5 text-sm font-semibold text-gray-800"
           >
+            <option value={0}>全年度</option>
             {MONTH_LABELS.slice(1).map((label, i) => (
               <option key={i + 1} value={i + 1}>{label}</option>
             ))}
@@ -155,7 +162,7 @@ export default function Home() {
               if (invoices && invoices.length > 0) {
                 exportInvoicesToCsv(
                   invoices,
-                  `發票_${year}-${String(month).padStart(2, "0")}.csv`
+                  `發票_${year}${month === 0 ? "_全年度" : `-${String(month).padStart(2, "0")}`}.csv`
                 );
               }
             }}
