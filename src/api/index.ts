@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { serve } from '@hono/node-server';
-import { getInvoices, getStats, deleteInvoice } from '../db/index.js';
+import { getInvoices, getStats, deleteInvoice, getDistinctUsers } from '../db/index.js';
 
 const app = new Hono();
 
@@ -9,13 +9,14 @@ app.use('/*', cors({ origin: '*' }));
 
 // Get invoices list
 app.get('/api/invoices', (c) => {
-  const { startDate, endDate, category, isCompany, limit, offset } = c.req.query();
+  const { startDate, endDate, category, isCompany, limit, offset, userId } = c.req.query();
 
   const invoices = getInvoices({
     startDate: startDate || undefined,
     endDate: endDate || undefined,
     category: category || undefined,
     isCompany: isCompany !== undefined ? isCompany === 'true' : undefined,
+    userId: userId || undefined,
     limit: limit ? parseInt(limit, 10) : 50,
     offset: offset ? parseInt(offset, 10) : 0,
   });
@@ -25,14 +26,20 @@ app.get('/api/invoices', (c) => {
 
 // Get statistics
 app.get('/api/stats', (c) => {
-  const { startDate, endDate } = c.req.query();
+  const { startDate, endDate, userId } = c.req.query();
 
   if (!startDate || !endDate) {
     return c.json({ ok: false, error: 'startDate and endDate are required' }, 400);
   }
 
-  const stats = getStats(startDate, endDate);
+  const stats = getStats(startDate, endDate, userId || undefined);
   return c.json({ ok: true, data: stats });
+});
+
+// Get distinct users
+app.get('/api/users', (c) => {
+  const users = getDistinctUsers();
+  return c.json({ ok: true, data: users });
 });
 
 // Delete invoice

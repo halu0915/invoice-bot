@@ -13,6 +13,8 @@ export const CREATE_INVOICES_TABLE = `
     invoice_number TEXT NOT NULL DEFAULT '',
     is_company INTEGER NOT NULL DEFAULT 0,
     note TEXT NOT NULL DEFAULT '',
+    user_id TEXT NOT NULL DEFAULT '',
+    user_name TEXT NOT NULL DEFAULT '',
     created_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
   )
 `;

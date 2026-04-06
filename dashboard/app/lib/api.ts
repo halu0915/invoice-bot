@@ -15,6 +15,8 @@ export interface Invoice {
   invoice_number: string;
   is_company: boolean;
   note: string;
+  user_id: string;
+  user_name: string;
   created_at: string;
 }
 
@@ -51,6 +53,7 @@ export async function fetchInvoices(params: {
   endDate: string;
   category?: string;
   isCompany?: boolean;
+  userId?: string;
   limit?: number;
   offset?: number;
 }): Promise<Invoice[]> {
@@ -60,6 +63,7 @@ export async function fetchInvoices(params: {
   if (params.category) url.searchParams.set("category", params.category);
   if (params.isCompany !== undefined)
     url.searchParams.set("isCompany", String(params.isCompany));
+  if (params.userId) url.searchParams.set("userId", params.userId);
   url.searchParams.set("limit", String(params.limit ?? 200));
   url.searchParams.set("offset", String(params.offset ?? 0));
 
@@ -72,15 +76,29 @@ export async function fetchInvoices(params: {
 export async function fetchStats(
   startDate: string,
   endDate: string,
+  userId?: string,
 ): Promise<Stats> {
   const url = new URL(`${API_BASE}/api/stats`);
   url.searchParams.set("startDate", startDate);
   url.searchParams.set("endDate", endDate);
+  if (userId) url.searchParams.set("userId", userId);
 
   const res = await fetch(url.toString());
   if (!res.ok) throw new Error(`fetchStats failed: ${res.status}`);
   const json = await res.json();
   return json.data as Stats;
+}
+
+export interface User {
+  user_id: string;
+  user_name: string;
+}
+
+export async function fetchUsers(): Promise<User[]> {
+  const res = await fetch(`${API_BASE}/api/users`);
+  if (!res.ok) throw new Error(`fetchUsers failed: ${res.status}`);
+  const json = await res.json();
+  return json.data as User[];
 }
 
 export async function deleteInvoice(id: number): Promise<void> {

@@ -30,6 +30,7 @@ bot.command('start', async (ctx) => {
 📋 /list → 最近 10 筆發票
 🏢 /company → 公司進項發票
 🗑️ /delete [ID] → 刪除指定發票
+👥 /all → 全部使用者統計（管理員）
 ❓ /help → 使用說明`
   );
 });
@@ -49,7 +50,8 @@ bot.command('help', async (ctx) => {
    /list - 最近 10 筆
    /list 20 - 最近 20 筆
    /company - 公司進項發票
-   /delete 5 - 刪除 ID 為 5 的發票`
+   /delete 5 - 刪除 ID 為 5 的發票
+   /all - 全部使用者統計（管理員）`
   );
 });
 
@@ -69,7 +71,8 @@ bot.command('stats', async (ctx) => {
 
   const startStr = format(start, 'yyyy-MM-dd');
   const endStr = format(end, 'yyyy-MM-dd');
-  const stats = getStats(startStr, endStr);
+  const userId = ctx.from?.id?.toString() || '';
+  const stats = getStats(startStr, endStr, userId);
 
   const monthLabel = format(start, 'yyyy年MM月');
 
@@ -96,7 +99,8 @@ bot.command('stats', async (ctx) => {
 // /list command
 bot.command('list', async (ctx) => {
   const limit = parseInt(ctx.match?.trim() || '10', 10);
-  const invoices = getInvoices({ limit });
+  const userId = ctx.from?.id?.toString() || '';
+  const invoices = getInvoices({ limit, userId });
 
   if (invoices.length === 0) {
     await ctx.reply('目前沒有任何發票紀錄');
@@ -118,7 +122,8 @@ bot.command('company', async (ctx) => {
   const start = format(startOfMonth(now), 'yyyy-MM-dd');
   const end = format(endOfMonth(now), 'yyyy-MM-dd');
 
-  const invoices = getInvoices({ startDate: start, endDate: end, isCompany: true });
+  const userId = ctx.from?.id?.toString() || '';
+  const invoices = getInvoices({ startDate: start, endDate: end, isCompany: true, userId });
 
   if (invoices.length === 0) {
     await ctx.reply('本月沒有公司進項發票');
@@ -160,6 +165,46 @@ bot.command('delete', async (ctx) => {
   }
 });
 
+// /all command - admin view for all users
+bot.command('all', async (ctx) => {
+  const arg = ctx.match?.trim();
+  let start: Date;
+  let end: Date;
+
+  if (arg && /^\d{4}-\d{2}$/.test(arg)) {
+    start = new Date(`${arg}-01`);
+    end = endOfMonth(start);
+  } else {
+    start = startOfMonth(new Date());
+    end = endOfMonth(new Date());
+  }
+
+  const startStr = format(start, 'yyyy-MM-dd');
+  const endStr = format(end, 'yyyy-MM-dd');
+  const stats = getStats(startStr, endStr);
+
+  const monthLabel = format(start, 'yyyy年MM月');
+
+  let msg = `👥 ${monthLabel} 全部使用者統計\n\n`;
+  msg += `📝 發票數量：${stats.total.count} 張\n`;
+  msg += `💰 總金額：$${stats.total.total_amount.toLocaleString()}\n`;
+  msg += `💵 總稅額：$${stats.total.total_tax.toLocaleString()}\n\n`;
+
+  if (stats.company.count > 0) {
+    msg += `🏢 公司進項：${stats.company.count} 張 / $${stats.company.total_amount.toLocaleString()}\n`;
+    msg += `   可扣抵稅額：$${stats.company.total_tax.toLocaleString()}\n\n`;
+  }
+
+  if (stats.byCategory.length > 0) {
+    msg += `📂 分類明細：\n`;
+    for (const cat of stats.byCategory) {
+      msg += `  ${cat.category}：${cat.count} 筆 / $${cat.total_amount.toLocaleString()}\n`;
+    }
+  }
+
+  await ctx.reply(msg);
+});
+
 // Handle photo messages - OCR processing
 bot.on('message:photo', async (ctx) => {
   await ctx.reply('🔍 正在辨識發票，請稍候...');
@@ -182,6 +227,8 @@ bot.on('message:photo', async (ctx) => {
     const ocrResult = await recognizeInvoice(filePath);
 
     // Save to database
+    const userId = ctx.from?.id?.toString() || '';
+    const userName = ((ctx.from?.first_name || '') + ' ' + (ctx.from?.last_name || '')).trim();
     const id = insertInvoice({
       image_path: filePath,
       date: ocrResult.date,
@@ -195,6 +242,8 @@ bot.on('message:photo', async (ctx) => {
       invoice_number: ocrResult.invoice_number,
       is_company: !!ocrResult.tax_id,
       note: '',
+      user_id: userId,
+      user_name: userName,
     });
 
     const companyTag = ocrResult.tax_id ? `\n🏢 公司進項（統編：${ocrResult.tax_id}）` : '';
@@ -250,6 +299,8 @@ bot.on('message:document', async (ctx) => {
 
     const ocrResult = await recognizeInvoice(filePath);
 
+    const userId = ctx.from?.id?.toString() || '';
+    const userName = ((ctx.from?.first_name || '') + ' ' + (ctx.from?.last_name || '')).trim();
     const id = insertInvoice({
       image_path: filePath,
       date: ocrResult.date,
@@ -263,6 +314,8 @@ bot.on('message:document', async (ctx) => {
       invoice_number: ocrResult.invoice_number,
       is_company: !!ocrResult.tax_id,
       note: '',
+      user_id: userId,
+      user_name: userName,
     });
 
     const companyTag = ocrResult.tax_id ? `\n🏢 公司進項（統編：${ocrResult.tax_id}）` : '';

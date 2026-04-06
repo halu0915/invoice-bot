@@ -12,6 +12,8 @@ export interface Invoice {
   invoice_number: string; // 發票號碼
   is_company: boolean;    // 是否為公司進項
   note: string;
+  user_id: string;        // Telegram user ID
+  user_name: string;      // Telegram display name
   created_at: string;
 }
 

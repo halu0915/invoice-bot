@@ -22,6 +22,18 @@ export function getDb(): Database.Database {
     db.exec(CREATE_INDEX_DATE);
     db.exec(CREATE_INDEX_CATEGORY);
     db.exec(CREATE_INDEX_IS_COMPANY);
+
+    // Migration: add user_id and user_name columns for multi-user support
+    try {
+      db.exec(`ALTER TABLE invoices ADD COLUMN user_id TEXT NOT NULL DEFAULT ''`);
+    } catch (_) {
+      // Column already exists
+    }
+    try {
+      db.exec(`ALTER TABLE invoices ADD COLUMN user_name TEXT NOT NULL DEFAULT ''`);
+    } catch (_) {
+      // Column already exists
+    }
   }
   return db;
 }
@@ -29,8 +41,8 @@ export function getDb(): Database.Database {
 export function insertInvoice(data: Omit<Invoice, 'id' | 'created_at'>): number {
   const db = getDb();
   const stmt = db.prepare(`
-    INSERT INTO invoices (image_path, date, vendor, tax_id, amount, tax_amount, pretax_amount, category, items, invoice_number, is_company, note)
-    VALUES (@image_path, @date, @vendor, @tax_id, @amount, @tax_amount, @pretax_amount, @category, @items, @invoice_number, @is_company, @note)
+    INSERT INTO invoices (image_path, date, vendor, tax_id, amount, tax_amount, pretax_amount, category, items, invoice_number, is_company, note, user_id, user_name)
+    VALUES (@image_path, @date, @vendor, @tax_id, @amount, @tax_amount, @pretax_amount, @category, @items, @invoice_number, @is_company, @note, @user_id, @user_name)
   `);
   const result = stmt.run({
     ...data,
@@ -44,6 +56,7 @@ export function getInvoices(filters?: {
   endDate?: string;
   category?: string;
   isCompany?: boolean;
+  userId?: string;
   limit?: number;
   offset?: number;
 }): Invoice[] {
@@ -67,6 +80,10 @@ export function getInvoices(filters?: {
     conditions.push('is_company = @isCompany');
     params.isCompany = filters.isCompany ? 1 : 0;
   }
+  if (filters?.userId) {
+    conditions.push('user_id = @userId');
+    params.userId = filters.userId;
+  }
 
   const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
   const limit = filters?.limit ?? 50;
@@ -83,8 +100,12 @@ export function getInvoices(filters?: {
   return rows.map((r) => ({ ...r, is_company: Boolean(r.is_company) }));
 }
 
-export function getStats(startDate: string, endDate: string) {
+export function getStats(startDate: string, endDate: string, userId?: string) {
   const db = getDb();
+
+  const userFilter = userId ? ' AND user_id = @userId' : '';
+  const queryParams: Record<string, unknown> = { startDate, endDate };
+  if (userId) queryParams.userId = userId;
 
   const totalStmt = db.prepare(`
     SELECT
@@ -92,7 +113,7 @@ export function getStats(startDate: string, endDate: string) {
       COALESCE(SUM(amount), 0) as total_amount,
       COALESCE(SUM(tax_amount), 0) as total_tax
     FROM invoices
-    WHERE date >= @startDate AND date <= @endDate
+    WHERE date >= @startDate AND date <= @endDate${userFilter}
   `);
 
   const categoryStmt = db.prepare(`
@@ -101,7 +122,7 @@ export function getStats(startDate: string, endDate: string) {
       COUNT(*) as count,
       COALESCE(SUM(amount), 0) as total_amount
     FROM invoices
-    WHERE date >= @startDate AND date <= @endDate
+    WHERE date >= @startDate AND date <= @endDate${userFilter}
     GROUP BY category
     ORDER BY total_amount DESC
   `);
@@ -112,14 +133,25 @@ export function getStats(startDate: string, endDate: string) {
       COALESCE(SUM(amount), 0) as total_amount,
       COALESCE(SUM(tax_amount), 0) as total_tax
     FROM invoices
-    WHERE date >= @startDate AND date <= @endDate AND is_company = 1
+    WHERE date >= @startDate AND date <= @endDate${userFilter} AND is_company = 1
   `);
 
   return {
-    total: totalStmt.get({ startDate, endDate }) as { count: number; total_amount: number; total_tax: number },
-    byCategory: categoryStmt.all({ startDate, endDate }) as { category: string; count: number; total_amount: number }[],
-    company: companyStmt.get({ startDate, endDate }) as { count: number; total_amount: number; total_tax: number },
+    total: totalStmt.get(queryParams) as { count: number; total_amount: number; total_tax: number },
+    byCategory: categoryStmt.all(queryParams) as { category: string; count: number; total_amount: number }[],
+    company: companyStmt.get(queryParams) as { count: number; total_amount: number; total_tax: number },
   };
+}
+
+export function getDistinctUsers(): { user_id: string; user_name: string }[] {
+  const db = getDb();
+  const stmt = db.prepare(`
+    SELECT DISTINCT user_id, user_name
+    FROM invoices
+    WHERE user_id != ''
+    ORDER BY user_name
+  `);
+  return stmt.all() as { user_id: string; user_name: string }[];
 }
 
 export function deleteInvoice(id: number): boolean {

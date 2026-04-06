@@ -4,8 +4,8 @@ import { useState, useEffect, useCallback } from "react";
 import StatsCards from "@/app/components/stats-cards";
 import CategoryChart from "@/app/components/category-chart";
 import InvoiceTable from "@/app/components/invoice-table";
-import { fetchInvoices, fetchStats, exportInvoicesToCsv } from "@/app/lib/api";
-import type { Invoice, Stats } from "@/app/lib/api";
+import { fetchInvoices, fetchStats, fetchUsers, exportInvoicesToCsv } from "@/app/lib/api";
+import type { Invoice, Stats, User } from "@/app/lib/api";
 
 function getMonthRange(year: number, month: number) {
   const start = `${year}-${String(month).padStart(2, "0")}-01`;
@@ -37,14 +37,24 @@ export default function Home() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [invoices, setInvoices] = useState<Invoice[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [users, setUsers] = useState<User[]>([]);
+  const [selectedUserId, setSelectedUserId] = useState<string>("");
+
+  // Load users once on mount
+  useEffect(() => {
+    fetchUsers()
+      .then(setUsers)
+      .catch(() => {});
+  }, []);
 
   const loadData = useCallback(async () => {
     const { start, end } = getMonthRange(year, month);
     try {
       setError(null);
+      const userId = selectedUserId || undefined;
       const [s, inv] = await Promise.all([
-        fetchStats(start, end),
-        fetchInvoices({ startDate: start, endDate: end }),
+        fetchStats(start, end, userId),
+        fetchInvoices({ startDate: start, endDate: end, userId }),
       ]);
       setStats(s);
       setInvoices(inv);
@@ -52,7 +62,7 @@ export default function Home() {
       console.error(err);
       setError("無法連線到 API，請確認後端服務是否正常運作。");
     }
-  }, [year, month]);
+  }, [year, month, selectedUserId]);
 
   // Fetch on mount and when month changes
   useEffect(() => {
@@ -93,8 +103,20 @@ export default function Home() {
           發票管理面板
         </h1>
 
-        {/* Month picker + Download */}
-        <div className="flex items-center gap-3">
+        {/* User filter + Month picker + Download */}
+        <div className="flex flex-wrap items-center gap-3">
+          <select
+            value={selectedUserId}
+            onChange={(e) => setSelectedUserId(e.target.value)}
+            className="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
+          >
+            <option value="">全部</option>
+            {users.map((u) => (
+              <option key={u.user_id} value={u.user_id}>
+                {u.user_name || u.user_id}
+              </option>
+            ))}
+          </select>
           <button
             type="button"
             onClick={prevMonth}
