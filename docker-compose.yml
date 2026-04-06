@@ -1,0 +1,38 @@
+services:
+  bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ["node", "dist/bot/index.js"]
+    env_file: .env
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_started
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ["node", "dist/api/index.js"]
+    env_file: .env
+    ports:
+      - "${API_PORT:-3456}:3456"
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped
+
+  dashboard:
+    build:
+      context: ./dashboard
+      dockerfile: Dockerfile
+    environment:
+      - NEXT_PUBLIC_API_URL=http://api:3456
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_started

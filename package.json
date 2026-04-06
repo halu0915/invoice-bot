@@ -1,0 +1,31 @@
+{
+  "name": "invoice-bot",
+  "version": "1.0.0",
+  "description": "Telegram bot for invoice/receipt tracking with OCR and dashboard",
+  "type": "module",
+  "scripts": {
+    "dev:bot": "node --env-file=.env --import tsx/esm src/bot/index.ts",
+    "dev:api": "node --env-file=.env --import tsx/esm src/api/index.ts",
+    "dev": "concurrently \"npm run dev:bot\" \"npm run dev:api\"",
+    "dev:dashboard": "cd dashboard && npm run dev",
+    "dev:all": "concurrently \"npm run dev:bot\" \"npm run dev:api\" \"npm run dev:dashboard\"",
+    "db:init": "tsx src/db/init.ts",
+    "build": "tsc",
+    "start:bot": "node dist/bot/index.js",
+    "start:api": "node dist/api/index.js"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.13.0",
+    "better-sqlite3": "^11.7.0",
+    "date-fns": "^4.1.0",
+    "grammy": "^1.31.0",
+    "hono": "^4.6.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.12",
+    "@types/node": "^22.10.0",
+    "concurrently": "^9.1.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
+}
