@@ -10,7 +10,8 @@ import {
 import type { Invoice } from '../types/index.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const DB_PATH = path.join(__dirname, '../../data/invoices.db');
+const DB_DIR = process.env.DB_DIR || path.join(__dirname, '../../data');
+const DB_PATH = path.join(DB_DIR, 'invoices.db');
 
 let db: Database.Database;
 
@@ -152,6 +153,23 @@ export function getDistinctUsers(): { user_id: string; user_name: string }[] {
     ORDER BY user_name
   `);
   return stmt.all() as { user_id: string; user_name: string }[];
+}
+
+export function getInvoiceById(id: number): Invoice | null {
+  const db = getDb();
+  const stmt = db.prepare('SELECT *, CASE WHEN is_company = 1 THEN 1 ELSE 0 END as is_company FROM invoices WHERE id = @id');
+  const row = stmt.get({ id }) as Invoice | undefined;
+  if (!row) return null;
+  return { ...row, is_company: Boolean(row.is_company) };
+}
+
+export function findByInvoiceNumber(invoiceNumber: string): Invoice | null {
+  if (!invoiceNumber) return null;
+  const db = getDb();
+  const stmt = db.prepare('SELECT *, CASE WHEN is_company = 1 THEN 1 ELSE 0 END as is_company FROM invoices WHERE invoice_number = @invoiceNumber LIMIT 1');
+  const row = stmt.get({ invoiceNumber }) as Invoice | undefined;
+  if (!row) return null;
+  return { ...row, is_company: Boolean(row.is_company) };
 }
 
 export function deleteInvoice(id: number): boolean {

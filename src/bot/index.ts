@@ -3,11 +3,11 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { recognizeInvoice } from '../ocr/index.js';
-import { insertInvoice, getInvoices, getStats, deleteInvoice } from '../db/index.js';
+import { insertInvoice, getInvoices, getStats, deleteInvoice, getInvoiceById, findByInvoiceNumber } from '../db/index.js';
 import { format, startOfMonth, endOfMonth, subMonths } from 'date-fns';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const UPLOAD_DIR = path.join(__dirname, '../../data/uploads');
+const UPLOAD_DIR = process.env.DB_DIR ? path.join(process.env.DB_DIR, 'uploads') : path.join(__dirname, '../../data/uploads');
 
 // Ensure upload directory exists
 fs.mkdirSync(UPLOAD_DIR, { recursive: true });
@@ -160,11 +160,23 @@ bot.command('delete', async (ctx) => {
     return;
   }
 
+  const invoice = getInvoiceById(id);
+  if (!invoice) {
+    await ctx.reply(`❌ 找不到 ID 為 ${id} 的發票`);
+    return;
+  }
+
+  const currentUserId = ctx.from?.id?.toString() || '';
+  if (invoice.user_id !== currentUserId) {
+    await ctx.reply('❌ 你只能刪除自己上傳的發票');
+    return;
+  }
+
   const success = deleteInvoice(id);
   if (success) {
     await ctx.reply(`✅ 已刪除發票 #${id}`);
   } else {
-    await ctx.reply(`❌ 找不到 ID 為 ${id} 的發票`);
+    await ctx.reply(`❌ 刪除發票 #${id} 時發生錯誤`);
   }
 });
 
@@ -249,6 +261,15 @@ bot.on('message:photo', async (ctx) => {
     // OCR recognition
     const ocrResult = await recognizeInvoice(filePath);
 
+    // Duplicate invoice number detection
+    if (ocrResult.invoice_number) {
+      const existing = findByInvoiceNumber(ocrResult.invoice_number);
+      if (existing) {
+        await ctx.reply(`⚠️ 重複發票！發票號碼 ${ocrResult.invoice_number} 已存在（#${existing.id}，由 ${existing.user_name} 於 ${existing.date} 上傳）。本次不上傳。`);
+        return;
+      }
+    }
+
     // Save to database
     const userId = ctx.from?.id?.toString() || '';
     const userName = ((ctx.from?.first_name || '') + ' ' + (ctx.from?.last_name || '')).trim();
@@ -321,6 +342,15 @@ bot.on('message:document', async (ctx) => {
     fs.writeFileSync(filePath, buffer);
 
     const ocrResult = await recognizeInvoice(filePath);
+
+    // Duplicate invoice number detection
+    if (ocrResult.invoice_number) {
+      const existing = findByInvoiceNumber(ocrResult.invoice_number);
+      if (existing) {
+        await ctx.reply(`⚠️ 重複發票！發票號碼 ${ocrResult.invoice_number} 已存在（#${existing.id}，由 ${existing.user_name} 於 ${existing.date} 上傳）。本次不上傳。`);
+        return;
+      }
+    }
 
     const userId = ctx.from?.id?.toString() || '';
     const userName = ((ctx.from?.first_name || '') + ' ' + (ctx.from?.last_name || '')).trim();
