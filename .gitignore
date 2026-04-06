@@ -6,3 +6,4 @@ data/
 .next/
 dashboard/node_modules/
 dashboard/.next/
+.vercel

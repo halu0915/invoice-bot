@@ -27,10 +27,11 @@ bot.command('start', async (ctx) => {
 
 📸 拍照或上傳發票圖片 → 自動辨識建檔
 📊 /stats → 本月消費統計
-📋 /list → 最近 10 筆發票
+📋 /list → 最近 10 筆發票（自己的）
 🏢 /company → 公司進項發票
 🗑️ /delete [ID] → 刪除指定發票
-👥 /all → 全部使用者統計（管理員）
+👥 /all → 全部使用者統計
+📋 /listall → 全部使用者發票明細
 ❓ /help → 使用說明`
   );
 });
@@ -51,7 +52,9 @@ bot.command('help', async (ctx) => {
    /list 20 - 最近 20 筆
    /company - 公司進項發票
    /delete 5 - 刪除 ID 為 5 的發票
-   /all - 全部使用者統計（管理員）`
+   /all - 全部使用者統計
+   /all 2026-03 - 指定月份全部統計
+   /listall - 全部使用者發票明細`
   );
 });
 
@@ -163,6 +166,26 @@ bot.command('delete', async (ctx) => {
   } else {
     await ctx.reply(`❌ 找不到 ID 為 ${id} 的發票`);
   }
+});
+
+// /listall command - view all users' invoices
+bot.command('listall', async (ctx) => {
+  const limit = parseInt(ctx.match?.trim() || '20', 10);
+  const invoices = getInvoices({ limit });
+
+  if (invoices.length === 0) {
+    await ctx.reply('目前沒有任何發票紀錄');
+    return;
+  }
+
+  let msg = `📋 全部使用者最近 ${invoices.length} 筆發票：\n\n`;
+  for (const inv of invoices) {
+    const company = inv.is_company ? ' 🏢' : '';
+    const user = inv.user_name || '未知';
+    msg += `#${inv.id} | ${inv.date} | ${inv.vendor} | $${inv.amount.toLocaleString()} | ${inv.category}${company} | 👤${user}\n`;
+  }
+
+  await ctx.reply(msg);
 });
 
 // /all command - admin view for all users
