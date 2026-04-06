@@ -89,3 +89,58 @@ export async function deleteInvoice(id: number): Promise<void> {
   });
   if (!res.ok) throw new Error(`deleteInvoice failed: ${res.status}`);
 }
+
+export function exportInvoicesToCsv(invoices: Invoice[], filename: string) {
+  const BOM = "\uFEFF";
+  const header = [
+    "ID",
+    "日期",
+    "商家",
+    "發票號碼",
+    "金額",
+    "稅額",
+    "未稅金額",
+    "分類",
+    "買方統編",
+    "公司進項",
+    "品項",
+    "建檔時間",
+  ].join(",");
+
+  const rows = invoices.map((inv) => {
+    const items = (() => {
+      try {
+        const arr = JSON.parse(inv.items);
+        return Array.isArray(arr)
+          ? arr.map((i: { name: string }) => i.name).join("; ")
+          : "";
+      } catch {
+        return "";
+      }
+    })();
+
+    return [
+      inv.id,
+      inv.date,
+      `"${inv.vendor.replace(/"/g, '""')}"`,
+      inv.invoice_number,
+      inv.amount,
+      inv.tax_amount,
+      inv.pretax_amount,
+      inv.category,
+      inv.tax_id ?? "",
+      inv.is_company ? "是" : "否",
+      `"${items.replace(/"/g, '""')}"`,
+      inv.created_at,
+    ].join(",");
+  });
+
+  const csv = BOM + header + "\n" + rows.join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}

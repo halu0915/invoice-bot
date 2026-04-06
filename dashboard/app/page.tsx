@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import StatsCards from "@/app/components/stats-cards";
 import CategoryChart from "@/app/components/category-chart";
 import InvoiceTable from "@/app/components/invoice-table";
-import { fetchInvoices, fetchStats } from "@/app/lib/api";
+import { fetchInvoices, fetchStats, exportInvoicesToCsv } from "@/app/lib/api";
 import type { Invoice, Stats } from "@/app/lib/api";
 
 function getMonthRange(year: number, month: number) {
@@ -93,8 +93,8 @@ export default function Home() {
           發票管理面板
         </h1>
 
-        {/* Month picker */}
-        <div className="flex items-center gap-2">
+        {/* Month picker + Download */}
+        <div className="flex items-center gap-3">
           <button
             type="button"
             onClick={prevMonth}
@@ -111,6 +111,21 @@ export default function Home() {
             className="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
           >
             下月 &rarr;
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              if (invoices && invoices.length > 0) {
+                exportInvoicesToCsv(
+                  invoices,
+                  `發票_${year}-${String(month).padStart(2, "0")}.csv`
+                );
+              }
+            }}
+            disabled={!invoices || invoices.length === 0}
+            className="ml-2 rounded-lg border border-blue-300 bg-blue-50 px-3 py-1.5 text-sm font-medium text-blue-700 transition-colors hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            下載 CSV
           </button>
         </div>
       </div>
