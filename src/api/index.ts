@@ -75,7 +75,7 @@ app.delete('/api/invoices/:id', (c) => {
 });
 
 // Serve invoice image
-app.get('/api/invoices/:id/image', (c) => {
+app.get('/api/image/:id', (c) => {
   const id = parseInt(c.req.param('id'), 10);
   if (isNaN(id)) {
     return c.json({ ok: false, error: 'Invalid ID' }, 400);
