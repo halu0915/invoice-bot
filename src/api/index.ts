@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { serve } from '@hono/node-server';
-import { getInvoices, getStats, deleteInvoice, getDistinctUsers } from '../db/index.js';
+import { getInvoices, getStats, deleteInvoice, getDistinctUsers, updateInvoiceCategory } from '../db/index.js';
 
 const app = new Hono();
 
@@ -40,6 +40,23 @@ app.get('/api/stats', (c) => {
 app.get('/api/users', (c) => {
   const users = getDistinctUsers();
   return c.json({ ok: true, data: users });
+});
+
+// Update invoice category
+app.patch('/api/invoices/:id/category', async (c) => {
+  const id = parseInt(c.req.param('id'), 10);
+  if (isNaN(id)) {
+    return c.json({ ok: false, error: 'Invalid ID' }, 400);
+  }
+  const body = await c.req.json<{ category: string }>();
+  if (!body.category) {
+    return c.json({ ok: false, error: 'category is required' }, 400);
+  }
+  const success = updateInvoiceCategory(id, body.category);
+  if (success) {
+    return c.json({ ok: true });
+  }
+  return c.json({ ok: false, error: 'Not found' }, 404);
 });
 
 // Delete invoice

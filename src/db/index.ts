@@ -172,6 +172,13 @@ export function findByInvoiceNumber(invoiceNumber: string): Invoice | null {
   return { ...row, is_company: Boolean(row.is_company) };
 }
 
+export function updateInvoiceCategory(id: number, category: string): boolean {
+  const db = getDb();
+  const stmt = db.prepare('UPDATE invoices SET category = @category WHERE id = @id');
+  const result = stmt.run({ id, category });
+  return result.changes > 0;
+}
+
 export function deleteInvoice(id: number): boolean {
   const db = getDb();
   const stmt = db.prepare('DELETE FROM invoices WHERE id = @id');

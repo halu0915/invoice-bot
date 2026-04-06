@@ -101,6 +101,15 @@ export async function fetchUsers(): Promise<User[]> {
   return json.data as User[];
 }
 
+export async function updateCategory(id: number, category: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/api/invoices/${id}/category`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ category }),
+  });
+  if (!res.ok) throw new Error(`updateCategory failed: ${res.status}`);
+}
+
 export async function deleteInvoice(id: number): Promise<void> {
   const res = await fetch(`${API_BASE}/api/invoices/${id}`, {
     method: "DELETE",

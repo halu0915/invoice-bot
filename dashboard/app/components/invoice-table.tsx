@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from "react";
 import type { Invoice } from "@/app/lib/api";
-import { CATEGORIES, deleteInvoice } from "@/app/lib/api";
+import { CATEGORIES, deleteInvoice, updateCategory } from "@/app/lib/api";
 
 function fmt(n: number): string {
   return n.toLocaleString("zh-TW", { minimumFractionDigits: 0 });
@@ -103,6 +103,7 @@ export default function InvoiceTable({
               <th className="px-4 py-3">商家</th>
               <th className="px-4 py-3 text-right">金額</th>
               <th className="px-4 py-3">分類</th>
+              <th className="px-4 py-3">上傳者</th>
               <th className="px-4 py-3 text-center">公司進項</th>
               <th className="px-4 py-3 text-center">操作</th>
             </tr>
@@ -110,14 +111,14 @@ export default function InvoiceTable({
           <tbody>
             {!filtered && (
               <tr>
-                <td colSpan={7} className="px-4 py-12 text-center text-gray-400">
+                <td colSpan={8} className="px-4 py-12 text-center text-gray-400">
                   載入中...
                 </td>
               </tr>
             )}
             {filtered && filtered.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-4 py-12 text-center text-gray-400">
+                <td colSpan={8} className="px-4 py-12 text-center text-gray-400">
                   無符合條件的發票
                 </td>
               </tr>
@@ -136,9 +137,25 @@ export default function InvoiceTable({
                   ${fmt(inv.amount)}
                 </td>
                 <td className="px-4 py-3">
-                  <span className="inline-block rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-600">
-                    {inv.category}
-                  </span>
+                  <select
+                    value={inv.category}
+                    onChange={async (e) => {
+                      try {
+                        await updateCategory(inv.id, e.target.value);
+                        onDeleted();
+                      } catch {
+                        alert("更新分類失敗");
+                      }
+                    }}
+                    className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600 border-none cursor-pointer hover:bg-gray-200"
+                  >
+                    {CATEGORIES.map((c) => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                </td>
+                <td className="px-4 py-3 whitespace-nowrap text-gray-600">
+                  {inv.user_name || '-'}
                 </td>
                 <td className="px-4 py-3 text-center">
                   {inv.is_company ? (
