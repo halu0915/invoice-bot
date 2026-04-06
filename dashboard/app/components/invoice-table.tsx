@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from "react";
 import type { Invoice } from "@/app/lib/api";
-import { CATEGORIES, deleteInvoice, updateCategory, getImageUrl } from "@/app/lib/api";
+import { CATEGORIES, deleteInvoice, updateCategory, getImageUrl, verifyAdmin } from "@/app/lib/api";
 
 function fmt(n: number): string {
   return n.toLocaleString("zh-TW", { minimumFractionDigits: 0 });
@@ -26,7 +26,8 @@ export default function InvoiceTable({
     async (id: number) => {
       const password = prompt("請輸入管理員密碼：");
       if (!password) return;
-      if (password !== process.env.NEXT_PUBLIC_ADMIN_PASSWORD) {
+      const isValid = await verifyAdmin(password);
+      if (!isValid) {
         alert("密碼錯誤，無權刪除");
         return;
       }

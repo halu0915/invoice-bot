@@ -6,7 +6,30 @@ import { getInvoices, getStats, deleteInvoice, getDistinctUsers, updateInvoiceCa
 
 const app = new Hono();
 
-app.use('/*', cors({ origin: '*' }));
+const allowedOrigins = [
+  ...((process.env.DASHBOARD_ORIGIN || 'http://localhost:3000,http://localhost:3001')
+    .split(',')
+    .map((o) => o.trim())),
+  'https://dashboard-omega-liart-74.vercel.app',
+];
+
+app.use(
+  '/*',
+  cors({
+    origin: (origin) => (allowedOrigins.includes(origin) ? origin : allowedOrigins[0]),
+  }),
+);
+
+// Bearer token auth for all /api/* routes except /api/health
+app.use('/api/*', async (c, next) => {
+  if (c.req.path === '/api/health') return next();
+  const authHeader = c.req.header('Authorization');
+  const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
+  if (!token || token !== process.env.API_SECRET_TOKEN) {
+    return c.json({ ok: false, error: 'Unauthorized' }, 401);
+  }
+  return next();
+});
 
 // Get invoices list
 app.get('/api/invoices', (c) => {
@@ -93,6 +116,15 @@ app.get('/api/image/:id', (c) => {
   } catch {
     return c.json({ ok: false, error: 'Image file not found' }, 404);
   }
+});
+
+// Verify admin password
+app.post('/api/verify-admin', async (c) => {
+  const body = await c.req.json<{ password: string }>();
+  if (body.password === process.env.ADMIN_PASSWORD) {
+    return c.json({ ok: true });
+  }
+  return c.json({ ok: false }, 403);
 });
 
 // Health check

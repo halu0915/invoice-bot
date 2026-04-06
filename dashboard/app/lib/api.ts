@@ -1,6 +1,10 @@
 const API_BASE =
   process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3456";
 
+const AUTH_HEADERS: Record<string, string> = {
+  Authorization: `Bearer ${process.env.NEXT_PUBLIC_API_TOKEN ?? ""}`,
+};
+
 export interface Invoice {
   id: number;
   image_path: string;
@@ -71,7 +75,7 @@ export async function fetchInvoices(params: {
   url.searchParams.set("limit", String(params.limit ?? 200));
   url.searchParams.set("offset", String(params.offset ?? 0));
 
-  const res = await fetch(url.toString());
+  const res = await fetch(url.toString(), { headers: { ...AUTH_HEADERS } });
   if (!res.ok) throw new Error(`fetchInvoices failed: ${res.status}`);
   const json = await res.json();
   return json.data as Invoice[];
@@ -87,7 +91,7 @@ export async function fetchStats(
   url.searchParams.set("endDate", endDate);
   if (userId) url.searchParams.set("userId", userId);
 
-  const res = await fetch(url.toString());
+  const res = await fetch(url.toString(), { headers: { ...AUTH_HEADERS } });
   if (!res.ok) throw new Error(`fetchStats failed: ${res.status}`);
   const json = await res.json();
   return json.data as Stats;
@@ -99,7 +103,7 @@ export interface User {
 }
 
 export async function fetchUsers(): Promise<User[]> {
-  const res = await fetch(`${API_BASE}/api/users`);
+  const res = await fetch(`${API_BASE}/api/users`, { headers: { ...AUTH_HEADERS } });
   if (!res.ok) throw new Error(`fetchUsers failed: ${res.status}`);
   const json = await res.json();
   return json.data as User[];
@@ -108,7 +112,7 @@ export async function fetchUsers(): Promise<User[]> {
 export async function updateCategory(id: number, category: string): Promise<void> {
   const res = await fetch(`${API_BASE}/api/invoices/${id}/category`, {
     method: "PATCH",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...AUTH_HEADERS },
     body: JSON.stringify({ category }),
   });
   if (!res.ok) throw new Error(`updateCategory failed: ${res.status}`);
@@ -117,6 +121,7 @@ export async function updateCategory(id: number, category: string): Promise<void
 export async function deleteInvoice(id: number): Promise<void> {
   const res = await fetch(`${API_BASE}/api/invoices/${id}`, {
     method: "DELETE",
+    headers: { ...AUTH_HEADERS },
   });
   if (!res.ok) throw new Error(`deleteInvoice failed: ${res.status}`);
 }
@@ -174,4 +179,19 @@ export function exportInvoicesToCsv(invoices: Invoice[], filename: string) {
   a.download = filename;
   a.click();
   URL.revokeObjectURL(url);
+}
+
+export async function verifyAdmin(password: string): Promise<boolean> {
+  try {
+    const res = await fetch(`${API_BASE}/api/verify-admin`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...AUTH_HEADERS },
+      body: JSON.stringify({ password }),
+    });
+    if (!res.ok) return false;
+    const json = await res.json();
+    return json.ok === true;
+  } catch {
+    return false;
+  }
 }
