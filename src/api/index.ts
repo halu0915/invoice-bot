@@ -97,7 +97,7 @@ app.get('/api/image/:id', (c) => {
 
 // Health check
 app.get('/api/health', (c) => {
-  return c.json({ ok: true, timestamp: new Date().toISOString() });
+  return c.json({ ok: true, timestamp: new Date().toISOString(), version: 'v2-image' });
 });
 
 const port = parseInt(process.env.PORT || process.env.API_PORT || '3456', 10);
