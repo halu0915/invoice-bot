@@ -122,17 +122,32 @@ export default function Home() {
             onClick={prevMonth}
             className="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
           >
-            &larr; 上月
+            &larr;
           </button>
-          <span className="min-w-[100px] text-center text-sm font-semibold text-gray-800">
-            {year} 年 {MONTH_LABELS[month]}
-          </span>
+          <select
+            value={year}
+            onChange={(e) => setYear(parseInt(e.target.value, 10))}
+            className="rounded-lg border border-gray-300 bg-white px-2 py-1.5 text-sm font-semibold text-gray-800"
+          >
+            {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - 2 + i).map((y) => (
+              <option key={y} value={y}>{y} 年</option>
+            ))}
+          </select>
+          <select
+            value={month}
+            onChange={(e) => setMonth(parseInt(e.target.value, 10))}
+            className="rounded-lg border border-gray-300 bg-white px-2 py-1.5 text-sm font-semibold text-gray-800"
+          >
+            {MONTH_LABELS.slice(1).map((label, i) => (
+              <option key={i + 1} value={i + 1}>{label}</option>
+            ))}
+          </select>
           <button
             type="button"
             onClick={nextMonth}
             className="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
           >
-            下月 &rarr;
+            &rarr;
           </button>
           <button
             type="button"
