@@ -23,6 +23,12 @@ export default function InvoiceTable({
 
   const handleDelete = useCallback(
     async (id: number) => {
+      const password = prompt("請輸入管理員密碼：");
+      if (!password) return;
+      if (password !== process.env.NEXT_PUBLIC_ADMIN_PASSWORD) {
+        alert("密碼錯誤，無權刪除");
+        return;
+      }
       if (!confirm("確認刪除此筆發票？")) return;
       setDeleting(id);
       try {
