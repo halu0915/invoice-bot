@@ -37,12 +37,18 @@ const MONTH_LABELS = [
 export default function Home() {
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
-  const [month, setMonth] = useState(now.getMonth() + 1); // 0 = full year
+  const [month, setMonth] = useState(now.getMonth() + 1); // 0 = full year, -1 = custom range
   const [stats, setStats] = useState<Stats | null>(null);
   const [invoices, setInvoices] = useState<Invoice[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [users, setUsers] = useState<User[]>([]);
   const [selectedUserId, setSelectedUserId] = useState<string>("");
+  const [customStart, setCustomStart] = useState(
+    `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`
+  );
+  const [customEnd, setCustomEnd] = useState(
+    `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()).padStart(2, "0")}`
+  );
 
   // Load users once on mount
   useEffect(() => {
@@ -52,7 +58,13 @@ export default function Home() {
   }, []);
 
   const loadData = useCallback(async () => {
-    const { start, end } = getMonthRange(year, month);
+    let start: string, end: string;
+    if (month === -1) {
+      start = customStart;
+      end = customEnd;
+    } else {
+      ({ start, end } = getMonthRange(year, month));
+    }
     try {
       setError(null);
       const userId = selectedUserId || undefined;
@@ -66,7 +78,7 @@ export default function Home() {
       console.error(err);
       setError("無法連線到 API，請確認後端服務是否正常運作。");
     }
-  }, [year, month, selectedUserId]);
+  }, [year, month, selectedUserId, customStart, customEnd]);
 
   // Fetch on mount and when month changes
   useEffect(() => {
@@ -109,36 +121,42 @@ export default function Home() {
           發票管理面板
         </h1>
 
-        {/* User filter + Month picker + Download */}
+        {/* Filters row */}
         <div className="flex flex-wrap items-center gap-3">
           <select
             value={selectedUserId}
             onChange={(e) => setSelectedUserId(e.target.value)}
             className="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
           >
-            <option value="">全部</option>
+            <option value="">全部使用者</option>
             {users.map((u) => (
               <option key={u.user_id} value={u.user_id}>
                 {u.user_name || u.user_id}
               </option>
             ))}
           </select>
-          <button
-            type="button"
-            onClick={prevMonth}
-            className="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
-          >
-            &larr;
-          </button>
-          <select
-            value={year}
-            onChange={(e) => setYear(parseInt(e.target.value, 10))}
-            className="rounded-lg border border-gray-300 bg-white px-2 py-1.5 text-sm font-semibold text-gray-800"
-          >
-            {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - 2 + i).map((y) => (
-              <option key={y} value={y}>{y} 年</option>
-            ))}
-          </select>
+
+          {month !== -1 && (
+            <>
+              <button
+                type="button"
+                onClick={prevMonth}
+                className="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
+              >
+                &larr;
+              </button>
+              <select
+                value={year}
+                onChange={(e) => setYear(parseInt(e.target.value, 10))}
+                className="rounded-lg border border-gray-300 bg-white px-2 py-1.5 text-sm font-semibold text-gray-800"
+              >
+                {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - 2 + i).map((y) => (
+                  <option key={y} value={y}>{y} 年</option>
+                ))}
+              </select>
+            </>
+          )}
+
           <select
             value={month}
             onChange={(e) => setMonth(parseInt(e.target.value, 10))}
@@ -148,26 +166,49 @@ export default function Home() {
             {MONTH_LABELS.slice(1).map((label, i) => (
               <option key={i + 1} value={i + 1}>{label}</option>
             ))}
+            <option value={-1}>自訂區間</option>
           </select>
-          <button
-            type="button"
-            onClick={nextMonth}
-            className="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
-          >
-            &rarr;
-          </button>
+
+          {month !== -1 && (
+            <button
+              type="button"
+              onClick={nextMonth}
+              className="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
+            >
+              &rarr;
+            </button>
+          )}
+
+          {month === -1 && (
+            <>
+              <input
+                type="date"
+                value={customStart}
+                onChange={(e) => setCustomStart(e.target.value)}
+                className="rounded-lg border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-800"
+              />
+              <span className="text-sm text-gray-500">~</span>
+              <input
+                type="date"
+                value={customEnd}
+                onChange={(e) => setCustomEnd(e.target.value)}
+                className="rounded-lg border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-800"
+              />
+            </>
+          )}
+
           <button
             type="button"
             onClick={() => {
               if (invoices && invoices.length > 0) {
-                exportInvoicesToCsv(
-                  invoices,
-                  `發票_${year}${month === 0 ? "_全年度" : `-${String(month).padStart(2, "0")}`}.csv`
-                );
+                const filename = month === -1
+                  ? `發票_${customStart}_${customEnd}.csv`
+                  : `發票_${year}${month === 0 ? "_全年度" : `-${String(month).padStart(2, "0")}`}.csv`;
+                exportInvoicesToCsv(invoices, filename);
               }
             }}
             disabled={!invoices || invoices.length === 0}
-            className="ml-2 rounded-lg border border-blue-300 bg-blue-50 px-3 py-1.5 text-sm font-medium text-blue-700 transition-colors hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-40"
+            className="rounded-lg border border-blue-300 bg-blue-50 px-3 py-1.5 text-sm font-medium text-blue-700 transition-colors hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-40"
           >
             下載 CSV
           </button>
