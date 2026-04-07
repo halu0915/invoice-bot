@@ -475,6 +475,136 @@ bot.on('message:document', async (ctx) => {
   }
 });
 
+// /panel command - group quick action panel
+bot.command('panel', async (ctx) => {
+  const keyboard = new InlineKeyboard()
+    .text('📊 本月統計', 'panel_stats')
+    .text('📋 最近發票', 'panel_list')
+    .text('🏢 公司進項', 'panel_company')
+    .row()
+    .text('🔍 搜尋發票', 'panel_search')
+    .text('📅 全年統計', 'panel_yearly')
+    .text('👥 全部發票', 'panel_listall')
+    .row()
+    .text('🤖 問 CEO', 'panel_ceo')
+    .text('📐 問設計', 'panel_design')
+    .text('💰 問財務', 'panel_finance');
+
+  await ctx.reply(
+    `🧾 恩加斯達快捷面板\n\n點擊按鈕快速操作：`,
+    { reply_markup: keyboard }
+  );
+});
+
+// Panel button handlers
+bot.callbackQuery('panel_stats', async (ctx) => {
+  await ctx.answerCallbackQuery();
+  const now = new Date();
+  const start = format(startOfMonth(now), 'yyyy-MM-dd');
+  const end = format(endOfMonth(now), 'yyyy-MM-dd');
+  const stats = getStats(start, end);
+  const monthLabel = format(now, 'yyyy年MM月');
+  let msg = `📊 ${monthLabel} 全部消費統計\n\n`;
+  msg += `📝 發票數量：${stats.total.count} 張\n`;
+  msg += `💰 總金額：$${stats.total.total_amount.toLocaleString()}\n`;
+  msg += `💵 總稅額：$${stats.total.total_tax.toLocaleString()}\n`;
+  if (stats.company.count > 0) {
+    msg += `\n🏢 公司進項：${stats.company.count} 張 / $${stats.company.total_amount.toLocaleString()}\n`;
+    msg += `   可扣抵稅額：$${stats.company.total_tax.toLocaleString()}`;
+  }
+  if (stats.byCategory.length > 0) {
+    msg += `\n\n📂 分類明細：\n`;
+    for (const cat of stats.byCategory) {
+      msg += `  ${cat.category}：${cat.count} 筆 / $${cat.total_amount.toLocaleString()}\n`;
+    }
+  }
+  await ctx.reply(msg);
+});
+
+bot.callbackQuery('panel_list', async (ctx) => {
+  await ctx.answerCallbackQuery();
+  const userId = ctx.from?.id?.toString() || '';
+  const invoices = getInvoices({ limit: 10, userId });
+  if (invoices.length === 0) { await ctx.reply('目前沒有任何發票紀錄'); return; }
+  let msg = `📋 最近 ${invoices.length} 筆發票：\n\n`;
+  for (const inv of invoices) {
+    const company = inv.is_company ? ' 🏢' : '';
+    msg += `#${inv.id} | ${inv.date} | ${inv.vendor} | $${inv.amount.toLocaleString()} | ${inv.category}${company}\n`;
+  }
+  await ctx.reply(msg);
+});
+
+bot.callbackQuery('panel_company', async (ctx) => {
+  await ctx.answerCallbackQuery();
+  const now = new Date();
+  const start = format(startOfMonth(now), 'yyyy-MM-dd');
+  const end = format(endOfMonth(now), 'yyyy-MM-dd');
+  const invoices = getInvoices({ startDate: start, endDate: end, isCompany: true });
+  if (invoices.length === 0) { await ctx.reply('本月沒有公司進項發票'); return; }
+  let msg = `🏢 本月公司進項發票：\n\n`;
+  let total = 0, totalTax = 0;
+  for (const inv of invoices) {
+    msg += `#${inv.id} | ${inv.date} | ${inv.vendor} | $${inv.amount.toLocaleString()} | 稅 $${inv.tax_amount.toLocaleString()}\n`;
+    total += inv.amount; totalTax += inv.tax_amount;
+  }
+  msg += `\n合計：${invoices.length} 張 / $${total.toLocaleString()}\n可扣抵稅額：$${totalTax.toLocaleString()}`;
+  await ctx.reply(msg);
+});
+
+bot.callbackQuery('panel_search', async (ctx) => {
+  await ctx.answerCallbackQuery();
+  await ctx.reply('請輸入搜尋指令：\n/search 關鍵字\n\n例如：/search 交通');
+});
+
+bot.callbackQuery('panel_yearly', async (ctx) => {
+  await ctx.answerCallbackQuery();
+  const year = new Date().getFullYear();
+  const stats = getStats(`${year}-01-01`, `${year}-12-31`);
+  let msg = `📅 ${year} 年度統計\n\n`;
+  msg += `📝 發票數量：${stats.total.count} 張\n`;
+  msg += `💰 總金額：$${stats.total.total_amount.toLocaleString()}\n`;
+  msg += `💵 總稅額：$${stats.total.total_tax.toLocaleString()}\n`;
+  if (stats.company.count > 0) {
+    msg += `\n🏢 公司進項：${stats.company.count} 張 / $${stats.company.total_amount.toLocaleString()}\n`;
+    msg += `   可扣抵稅額：$${stats.company.total_tax.toLocaleString()}`;
+  }
+  if (stats.byCategory.length > 0) {
+    msg += `\n\n📂 分類明細：\n`;
+    for (const cat of stats.byCategory) {
+      msg += `  ${cat.category}：${cat.count} 筆 / $${cat.total_amount.toLocaleString()}\n`;
+    }
+  }
+  await ctx.reply(msg);
+});
+
+bot.callbackQuery('panel_listall', async (ctx) => {
+  await ctx.answerCallbackQuery();
+  const invoices = getInvoices({ limit: 20 });
+  if (invoices.length === 0) { await ctx.reply('目前沒有任何發票紀錄'); return; }
+  let msg = `👥 全部使用者最近 ${invoices.length} 筆發票：\n\n`;
+  for (const inv of invoices) {
+    const company = inv.is_company ? ' 🏢' : '';
+    const user = inv.user_name || '未知';
+    msg += `#${inv.id} | ${inv.date} | ${inv.vendor} | $${inv.amount.toLocaleString()} | ${inv.category}${company} | 👤${user}\n`;
+  }
+  await ctx.reply(msg);
+});
+
+bot.callbackQuery('panel_ceo', async (ctx) => {
+  await ctx.answerCallbackQuery();
+  await ctx.reply('請直接 @tag CEO Bot 提問：\n\n例如：@NPlusStarBot 幫我分析本月營運狀況');
+});
+
+bot.callbackQuery('panel_design', async (ctx) => {
+  await ctx.answerCallbackQuery();
+  await ctx.reply('請直接 @tag 設計 Bot 提問：\n\n例如：@NPSdesign_bot 查詢消防管徑規範');
+});
+
+bot.callbackQuery('panel_finance', async (ctx) => {
+  await ctx.answerCallbackQuery();
+  await ctx.reply('請直接 @tag 財務 Bot 提問：\n\n例如：@NPSfiance_bot 分析上月財務報告');
+});
+
 // Set bot command menu
 bot.api.setMyCommands([
   { command: 'start', description: '開始使用' },
@@ -487,6 +617,7 @@ bot.api.setMyCommands([
   { command: 'all', description: '全部使用者統計' },
   { command: 'listall', description: '全部使用者發票' },
   { command: 'delete', description: '刪除發票' },
+  { command: 'panel', description: '快捷面板' },
 ]).catch(console.error);
 
 // Start bot
