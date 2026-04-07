@@ -23,6 +23,11 @@ app.use(
 // Bearer token auth for all /api/* routes except /api/health
 app.use('/api/*', async (c, next) => {
   if (c.req.path === '/api/health') return next();
+  // Image endpoint uses query token since <img> tags can't send headers
+  if (c.req.path.startsWith('/api/image/')) {
+    const qToken = c.req.query('token');
+    if (qToken && qToken === process.env.API_SECRET_TOKEN) return next();
+  }
   const authHeader = c.req.header('Authorization');
   const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
   if (!token || token !== process.env.API_SECRET_TOKEN) {

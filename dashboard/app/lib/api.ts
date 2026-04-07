@@ -51,7 +51,8 @@ export const CATEGORIES = [
 export type Category = (typeof CATEGORIES)[number];
 
 export function getImageUrl(invoiceId: number): string {
-  return `${API_BASE}/api/image/${invoiceId}`;
+  const token = process.env.NEXT_PUBLIC_API_TOKEN ?? "";
+  return `${API_BASE}/api/image/${invoiceId}?token=${token}`;
 }
 
 // ---------- fetch helpers ----------
