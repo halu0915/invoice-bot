@@ -484,14 +484,10 @@ bot.command('panel', async (ctx) => {
     .row()
     .text('🔍 搜尋發票', 'panel_search')
     .text('📅 全年統計', 'panel_yearly')
-    .text('👥 全部發票', 'panel_listall')
-    .row()
-    .text('🤖 CEO 總管', 'panel_ceo')
-    .text('🔍 情報中心', 'panel_intel')
-    .text('💰 財務分析', 'panel_fin');
+    .text('👥 全部發票', 'panel_listall');
 
   await ctx.reply(
-    `🧾 恩加斯達快捷面板\n\n點擊按鈕快速操作：`,
+    `🧾 恩加斯達發票面板\n\n點擊按鈕查詢發票資料：`,
     { reply_markup: keyboard }
   );
 });
@@ -675,22 +671,7 @@ bot.callbackQuery('panel_fin', async (ctx) => {
 });
 
 // === Back to main panel ===
-bot.callbackQuery('panel_back', async (ctx) => {
-  await ctx.answerCallbackQuery();
-  const keyboard = new InlineKeyboard()
-    .text('📊 本月統計', 'panel_stats')
-    .text('📋 最近發票', 'panel_list')
-    .text('🏢 公司進項', 'panel_company')
-    .row()
-    .text('🔍 搜尋發票', 'panel_search')
-    .text('📅 全年統計', 'panel_yearly')
-    .text('👥 全部發票', 'panel_listall')
-    .row()
-    .text('🤖 CEO 總管', 'panel_ceo')
-    .text('🔍 情報中心', 'panel_intel')
-    .text('💰 財務分析', 'panel_fin');
-  await ctx.editMessageText('🧾 恩加斯達快捷面板\n\n點擊按鈕快速操作：', { reply_markup: keyboard });
-});
+// (Agent sub-menus removed - use @tag in group directly)
 
 // Set bot command menu
 bot.api.setMyCommands([
