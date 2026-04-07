@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import StatsCards from "@/app/components/stats-cards";
 import CategoryChart from "@/app/components/category-chart";
+import CategoryPie from "@/app/components/category-pie";
 import InvoiceTable from "@/app/components/invoice-table";
 import { fetchInvoices, fetchStats, fetchUsers, exportInvoicesToCsv } from "@/app/lib/api";
 import type { Invoice, Stats, User } from "@/app/lib/api";
@@ -233,7 +234,10 @@ export default function Home() {
           <h2 className="mb-4 text-lg font-semibold text-gray-800">
             分類統計
           </h2>
-          <CategoryChart data={stats?.byCategory ?? null} />
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            <CategoryChart data={stats?.byCategory ?? null} />
+            <CategoryPie data={stats?.byCategory ?? null} />
+          </div>
         </div>
       </section>
 

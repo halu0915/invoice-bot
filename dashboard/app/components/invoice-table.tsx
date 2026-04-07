@@ -1,11 +1,45 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import type { Invoice } from "@/app/lib/api";
 import { CATEGORIES, deleteInvoice, updateCategory, getImageUrl, verifyAdmin } from "@/app/lib/api";
 
 function fmt(n: number): string {
   return n.toLocaleString("zh-TW", { minimumFractionDigits: 0 });
+}
+
+type SortField = "id" | "date" | "amount" | "category" | "user_name";
+type SortDirection = "asc" | "desc";
+
+function SortTh({
+  field,
+  label,
+  sortField,
+  sortDirection,
+  onSort,
+  align,
+}: {
+  field: SortField;
+  label: string;
+  sortField: SortField;
+  sortDirection: SortDirection;
+  onSort: (f: SortField) => void;
+  align?: string;
+}) {
+  const isActive = sortField === field;
+  return (
+    <th
+      className={`px-4 py-3 cursor-pointer select-none hover:text-gray-700 ${align ?? ""}`}
+      onClick={() => onSort(field)}
+    >
+      {label}
+      {isActive && (
+        <span className="ml-1 text-gray-700">
+          {sortDirection === "asc" ? "\u25B2" : "\u25BC"}
+        </span>
+      )}
+    </th>
+  );
 }
 
 interface InvoiceTableProps {
@@ -21,6 +55,17 @@ export default function InvoiceTable({
   const [companyOnly, setCompanyOnly] = useState(false);
   const [deleting, setDeleting] = useState<number | null>(null);
   const [previewId, setPreviewId] = useState<number | null>(null);
+  const [sortField, setSortField] = useState<SortField>("date");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
+
+  function handleSort(field: SortField) {
+    if (sortField === field) {
+      setSortDirection((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortField(field);
+      setSortDirection("asc");
+    }
+  }
 
   const handleDelete = useCallback(
     async (id: number) => {
@@ -46,11 +91,35 @@ export default function InvoiceTable({
     [onDeleted],
   );
 
-  const filtered = invoices?.filter((inv) => {
-    if (categoryFilter && inv.category !== categoryFilter) return false;
-    if (companyOnly && !inv.is_company) return false;
-    return true;
-  });
+  const filtered = useMemo(() => {
+    const list = invoices?.filter((inv) => {
+      if (categoryFilter && inv.category !== categoryFilter) return false;
+      if (companyOnly && !inv.is_company) return false;
+      return true;
+    });
+    if (!list) return list;
+    return [...list].sort((a, b) => {
+      let cmp = 0;
+      switch (sortField) {
+        case "id":
+          cmp = a.id - b.id;
+          break;
+        case "date":
+          cmp = a.date.localeCompare(b.date);
+          break;
+        case "amount":
+          cmp = a.amount - b.amount;
+          break;
+        case "category":
+          cmp = a.category.localeCompare(b.category);
+          break;
+        case "user_name":
+          cmp = (a.user_name || "").localeCompare(b.user_name || "");
+          break;
+      }
+      return sortDirection === "asc" ? cmp : -cmp;
+    });
+  }, [invoices, categoryFilter, companyOnly, sortField, sortDirection]);
 
   return (
     <div>
@@ -107,12 +176,12 @@ export default function InvoiceTable({
           <thead>
             <tr className="border-b border-gray-100 bg-gray-50 text-xs uppercase text-gray-500">
               <th className="px-4 py-3 text-center">圖片</th>
-              <th className="px-4 py-3">ID</th>
-              <th className="px-4 py-3">日期</th>
+              <SortTh field="id" label="ID" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
+              <SortTh field="date" label="日期" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
               <th className="px-4 py-3">商家</th>
-              <th className="px-4 py-3 text-right">金額</th>
-              <th className="px-4 py-3">分類</th>
-              <th className="px-4 py-3">上傳者</th>
+              <SortTh field="amount" label="金額" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} align="text-right" />
+              <SortTh field="category" label="分類" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
+              <SortTh field="user_name" label="上傳者" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
               <th className="px-4 py-3 text-center">公司進項</th>
               <th className="px-4 py-3 text-center">操作</th>
             </tr>

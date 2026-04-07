@@ -179,6 +179,28 @@ export function updateInvoiceCategory(id: number, category: string): boolean {
   return result.changes > 0;
 }
 
+export function searchInvoices(keyword: string, userId?: string): Invoice[] {
+  const db = getDb();
+  const conditions: string[] = ['(vendor LIKE @pattern OR invoice_number LIKE @pattern)'];
+  const params: Record<string, unknown> = { pattern: `%${keyword}%` };
+
+  if (userId) {
+    conditions.push('user_id = @userId');
+    params.userId = userId;
+  }
+
+  const where = `WHERE ${conditions.join(' AND ')}`;
+  const stmt = db.prepare(`
+    SELECT *, CASE WHEN is_company = 1 THEN 1 ELSE 0 END as is_company
+    FROM invoices ${where}
+    ORDER BY date DESC
+    LIMIT 20
+  `);
+
+  const rows = stmt.all(params) as Invoice[];
+  return rows.map((r) => ({ ...r, is_company: Boolean(r.is_company) }));
+}
+
 export function deleteInvoice(id: number): boolean {
   const db = getDb();
   const stmt = db.prepare('DELETE FROM invoices WHERE id = @id');

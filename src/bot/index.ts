@@ -1,9 +1,9 @@
-import { Bot, InputFile } from 'grammy';
+import { Bot, InputFile, InlineKeyboard } from 'grammy';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { recognizeInvoice } from '../ocr/index.js';
-import { insertInvoice, getInvoices, getStats, deleteInvoice, getInvoiceById, findByInvoiceNumber } from '../db/index.js';
+import { insertInvoice, getInvoices, getStats, deleteInvoice, getInvoiceById, findByInvoiceNumber, searchInvoices, updateInvoiceCategory } from '../db/index.js';
 import { format, startOfMonth, endOfMonth, subMonths } from 'date-fns';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -28,6 +28,8 @@ bot.command('start', async (ctx) => {
 📸 拍照或上傳發票圖片 → 自動辨識建檔
 📊 /stats → 本月消費統計
 📋 /list → 最近 10 筆發票（自己的）
+🔍 /search [關鍵字] → 搜尋發票
+📅 /range [起日] [迄日] → 日期區間查詢
 🏢 /company → 公司進項發票
 🗑️ /delete [ID] → 刪除指定發票
 👥 /all → 全部使用者統計
@@ -50,6 +52,8 @@ bot.command('help', async (ctx) => {
    /stats 2024-03 - 指定月份統計
    /list - 最近 10 筆
    /list 20 - 最近 20 筆
+   /search 全聯 - 搜尋商家或發票號碼
+   /range 2026-01-01 2026-03-31 - 日期區間查詢
    /company - 公司進項發票
    /delete 5 - 刪除 ID 為 5 的發票
    /all - 全部使用者統計
@@ -240,6 +244,79 @@ bot.command('all', async (ctx) => {
   await ctx.reply(msg);
 });
 
+// /search command
+bot.command('search', async (ctx) => {
+  const keyword = ctx.match?.trim();
+  if (!keyword) {
+    await ctx.reply('請提供搜尋關鍵字，例如：/search 全聯');
+    return;
+  }
+
+  const userId = ctx.from?.id?.toString() || '';
+  const invoices = searchInvoices(keyword, userId);
+
+  if (invoices.length === 0) {
+    await ctx.reply(`🔍 找不到包含「${keyword}」的發票`);
+    return;
+  }
+
+  let msg = `🔍 搜尋「${keyword}」結果（${invoices.length} 筆）：\n\n`;
+  for (const inv of invoices) {
+    const company = inv.is_company ? ' 🏢' : '';
+    msg += `#${inv.id} | ${inv.date} | ${inv.vendor} | $${inv.amount.toLocaleString()} | ${inv.category}${company}\n`;
+    if (inv.invoice_number) {
+      msg += `  發票號碼：${inv.invoice_number}\n`;
+    }
+  }
+
+  await ctx.reply(msg);
+});
+
+// /range command
+bot.command('range', async (ctx) => {
+  const args = ctx.match?.trim().split(/\s+/);
+  if (!args || args.length < 2 || !/^\d{4}-\d{2}-\d{2}$/.test(args[0]) || !/^\d{4}-\d{2}-\d{2}$/.test(args[1])) {
+    await ctx.reply('請提供日期區間，例如：/range 2026-01-01 2026-03-31');
+    return;
+  }
+
+  const startDate = args[0];
+  const endDate = args[1];
+  const userId = ctx.from?.id?.toString() || '';
+  const invoices = getInvoices({ startDate, endDate, userId, limit: 100 });
+
+  if (invoices.length === 0) {
+    await ctx.reply(`📅 ${startDate} ~ ${endDate} 期間沒有發票紀錄`);
+    return;
+  }
+
+  let totalAmount = 0;
+  let msg = `📅 ${startDate} ~ ${endDate} 發票清單：\n\n`;
+  for (const inv of invoices) {
+    const company = inv.is_company ? ' 🏢' : '';
+    msg += `#${inv.id} | ${inv.date} | ${inv.vendor} | $${inv.amount.toLocaleString()} | ${inv.category}${company}\n`;
+    totalAmount += inv.amount;
+  }
+
+  msg += `\n---\n`;
+  msg += `📊 合計：${invoices.length} 筆 / $${totalAmount.toLocaleString()}`;
+
+  await ctx.reply(msg);
+});
+
+// Callback query handler for category changes
+bot.callbackQuery(/^cat_(\d+)_(.+)$/, async (ctx) => {
+  const match = ctx.match!;
+  const invoiceId = parseInt(match[1], 10);
+  const category = match[2];
+
+  const success = updateInvoiceCategory(invoiceId, category);
+  if (success) {
+    await ctx.editMessageText(`分類已更新為: ${category}`);
+  }
+  await ctx.answerCallbackQuery();
+});
+
 // Handle photo messages - OCR processing
 bot.on('message:photo', async (ctx) => {
   await ctx.reply('🔍 正在辨識發票，請稍候...');
@@ -311,7 +388,14 @@ bot.on('message:photo', async (ctx) => {
       msg += `\n\n📦 品項：\n${itemsList}`;
     }
 
-    await ctx.reply(msg);
+    const keyboard = new InlineKeyboard()
+      .text('餐飲', `cat_${id}_餐飲`)
+      .text('交通', `cat_${id}_交通`)
+      .text('辦公用品', `cat_${id}_辦公用品`)
+      .text('日用品', `cat_${id}_日用品`)
+      .text('其他', `cat_${id}_其他`);
+
+    await ctx.reply(msg, { reply_markup: keyboard });
   } catch (error) {
     console.error('OCR error:', error);
     const errMsg = error instanceof Error ? error.message : '未知錯誤';
@@ -373,8 +457,16 @@ bot.on('message:document', async (ctx) => {
 
     const companyTag = ocrResult.tax_id ? `\n🏢 公司進項（統編：${ocrResult.tax_id}）` : '';
 
+    const keyboard = new InlineKeyboard()
+      .text('餐飲', `cat_${id}_餐飲`)
+      .text('交通', `cat_${id}_交通`)
+      .text('辦公用品', `cat_${id}_辦公用品`)
+      .text('日用品', `cat_${id}_日用品`)
+      .text('其他', `cat_${id}_其他`);
+
     await ctx.reply(
-      `✅ 發票已建檔 #${id}\n\n📅 ${ocrResult.date} | 🏪 ${ocrResult.vendor}\n💰 $${ocrResult.amount.toLocaleString()} | 📂 ${ocrResult.category}${companyTag}`
+      `✅ 發票已建檔 #${id}\n\n📅 ${ocrResult.date} | 🏪 ${ocrResult.vendor}\n💰 $${ocrResult.amount.toLocaleString()} | 📂 ${ocrResult.category}${companyTag}`,
+      { reply_markup: keyboard }
     );
   } catch (error) {
     console.error('OCR error:', error);
@@ -382,6 +474,20 @@ bot.on('message:document', async (ctx) => {
     await ctx.reply(`❌ 辨識失敗：${errMsg}\n請確認圖片清晰後重試`);
   }
 });
+
+// Set bot command menu
+bot.api.setMyCommands([
+  { command: 'start', description: '開始使用' },
+  { command: 'help', description: '使用說明' },
+  { command: 'stats', description: '本月消費統計' },
+  { command: 'list', description: '最近發票（自己的）' },
+  { command: 'company', description: '公司進項發票' },
+  { command: 'search', description: '搜尋發票（商家/號碼）' },
+  { command: 'range', description: '日期範圍查詢' },
+  { command: 'all', description: '全部使用者統計' },
+  { command: 'listall', description: '全部使用者發票' },
+  { command: 'delete', description: '刪除發票' },
+]).catch(console.error);
 
 // Start bot
 bot.start({
