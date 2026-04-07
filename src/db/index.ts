@@ -181,7 +181,7 @@ export function updateInvoiceCategory(id: number, category: string): boolean {
 
 export function searchInvoices(keyword: string, userId?: string): Invoice[] {
   const db = getDb();
-  const conditions: string[] = ['(vendor LIKE @pattern OR invoice_number LIKE @pattern)'];
+  const conditions: string[] = ['(vendor LIKE @pattern OR invoice_number LIKE @pattern OR category LIKE @pattern)'];
   const params: Record<string, unknown> = { pattern: `%${keyword}%` };
 
   if (userId) {
