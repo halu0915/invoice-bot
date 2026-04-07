@@ -594,126 +594,51 @@ bot.callbackQuery('panel_listall', async (ctx) => {
 bot.callbackQuery('panel_ceo', async (ctx) => {
   await ctx.answerCallbackQuery();
   const kb = new InlineKeyboard()
-    .text('📋 規劃本週工作', 'ceo_weekly')
-    .text('📊 營運狀況分析', 'ceo_ops')
+    .switchInlineCurrent('📋 每日匯報', '@NPlusStarBot 請做今日工作匯報，彙整各部門進度和待辦事項')
+    .switchInlineCurrent('📊 營運分析', '@NPlusStarBot 請分析公司目前營運狀況，包括專案進度、財務健康、潛在風險')
     .row()
-    .text('💼 投標案評估', 'ceo_bid')
-    .text('⚡ 緊急決策建議', 'ceo_urgent')
+    .switchInlineCurrent('💼 投標評估', '@NPlusStarBot 請評估是否值得投標，從技術、財務、競爭三個角度分析')
+    .switchInlineCurrent('⚡ 緊急事項', '@NPlusStarBot 列出目前需要緊急處理的前3件事和建議行動')
     .row()
-    .text('👥 各部門進度', 'ceo_progress')
-    .text('🎯 策略方向建議', 'ceo_strategy')
+    .switchInlineCurrent('🎯 策略建議', '@NPlusStarBot 根據目前市場和公司資源，給出下個月策略方向')
+    .switchInlineCurrent('📋 週計畫', '@NPlusStarBot 請幫我規劃本週工作重點，給出優先級排序')
     .row()
     .text('◀ 返回主面板', 'panel_back');
-  await ctx.reply('🤖 CEO 總管 — 選擇任務：', { reply_markup: kb });
-});
-
-bot.callbackQuery('ceo_weekly', async (ctx) => {
-  await ctx.answerCallbackQuery();
-  await ctx.reply('@NPlusStarBot 請幫我規劃本週的工作重點，根據目前進行中的專案和待辦事項，給出優先級排序和建議。');
-});
-bot.callbackQuery('ceo_ops', async (ctx) => {
-  await ctx.answerCallbackQuery();
-  await ctx.reply('@NPlusStarBot 請分析公司目前的營運狀況，包括專案進度、財務健康、潛在風險，並給出改善建議。');
-});
-bot.callbackQuery('ceo_bid', async (ctx) => {
-  await ctx.answerCallbackQuery();
-  await ctx.reply('@NPlusStarBot 請幫我評估是否值得投標最近發現的標案，需要從技術、財務、競爭三個角度分析。');
-});
-bot.callbackQuery('ceo_urgent', async (ctx) => {
-  await ctx.answerCallbackQuery();
-  await ctx.reply('@NPlusStarBot 目前有什麼需要緊急處理的事項嗎？請列出優先級最高的 3 件事和建議行動。');
-});
-bot.callbackQuery('ceo_progress', async (ctx) => {
-  await ctx.answerCallbackQuery();
-  await ctx.reply('@NPlusStarBot 請彙報各部門目前的工作進度和狀態，標記任何需要關注的項目。');
-});
-bot.callbackQuery('ceo_strategy', async (ctx) => {
-  await ctx.answerCallbackQuery();
-  await ctx.reply('@NPlusStarBot 根據目前的市場狀況和公司資源，請給出下個月的策略方向建議。');
+  await ctx.reply('🤖 CEO 總管 — 點擊後在輸入框編輯發送：', { reply_markup: kb });
 });
 
 // === Intelligence Sub-menu ===
 bot.callbackQuery('panel_intel', async (ctx) => {
   await ctx.answerCallbackQuery();
   const kb = new InlineKeyboard()
-    .text('📢 今日標案', 'intel_tender')
-    .text('🏗️ 消防工程標案', 'intel_fire')
+    .switchInlineCurrent('📢 今日標案', '@NPSinteligence_bot 搜尋今天最新的消防、機電、水電公共工程標案')
+    .switchInlineCurrent('🏗️ 消防標案', '@NPSinteligence_bot 搜尋近期消防工程標案，預算300萬以上，北部優先')
     .row()
-    .text('📈 市場趨勢', 'intel_market')
-    .text('🔎 競爭對手動態', 'intel_competitor')
+    .switchInlineCurrent('📈 市場趨勢', '@NPSinteligence_bot 分析目前MEP工程市場趨勢，價格走勢和需求變化')
+    .switchInlineCurrent('🔎 競爭動態', '@NPSinteligence_bot 分析主要競爭對手的近期動態和策略')
     .row()
-    .text('🗞️ 產業新聞', 'intel_news')
-    .text('💡 商機分析', 'intel_opportunity')
+    .switchInlineCurrent('🗞️ 產業新聞', '@NPSinteligence_bot 整理本週消防工程、建築法規、公共工程相關重要新聞')
+    .switchInlineCurrent('💡 商機分析', '@NPSinteligence_bot 分析目前有哪些潛在商機值得公司關注和跟進')
     .row()
     .text('◀ 返回主面板', 'panel_back');
-  await ctx.reply('🔍 情報中心 — 選擇查詢：', { reply_markup: kb });
-});
-
-bot.callbackQuery('intel_tender', async (ctx) => {
-  await ctx.answerCallbackQuery();
-  await ctx.reply('@NPSinteligence_bot 請搜尋今天最新的公共工程標案，篩選跟消防、機電、水電相關的。');
-});
-bot.callbackQuery('intel_fire', async (ctx) => {
-  await ctx.answerCallbackQuery();
-  await ctx.reply('@NPSinteligence_bot 請搜尋近期的消防工程標案，預算 300 萬以上，北部地區優先。');
-});
-bot.callbackQuery('intel_market', async (ctx) => {
-  await ctx.answerCallbackQuery();
-  await ctx.reply('@NPSinteligence_bot 請分析目前 MEP 工程市場的趨勢，包括價格走勢、需求變化。');
-});
-bot.callbackQuery('intel_competitor', async (ctx) => {
-  await ctx.answerCallbackQuery();
-  await ctx.reply('@NPSinteligence_bot 請分析我們主要競爭對手的近期動態和策略。');
-});
-bot.callbackQuery('intel_news', async (ctx) => {
-  await ctx.answerCallbackQuery();
-  await ctx.reply('@NPSinteligence_bot 請整理本週跟消防工程、建築法規、公共工程相關的重要新聞。');
-});
-bot.callbackQuery('intel_opportunity', async (ctx) => {
-  await ctx.answerCallbackQuery();
-  await ctx.reply('@NPSinteligence_bot 請分析目前有哪些潛在商機值得公司關注和跟進。');
+  await ctx.reply('🔍 情報中心 — 點擊後在輸入框編輯發送：', { reply_markup: kb });
 });
 
 // === Finance Sub-menu ===
 bot.callbackQuery('panel_fin', async (ctx) => {
   await ctx.answerCallbackQuery();
   const kb = new InlineKeyboard()
-    .text('📊 月度財報', 'fin_monthly')
-    .text('💵 現金流', 'fin_cashflow')
+    .switchInlineCurrent('📊 月度財報', '@NPSfiance_bot 產出上個月完整財務報告，含分類統計、公司進項、預算對比')
+    .switchInlineCurrent('💵 現金流', '@NPSfiance_bot 預測未來3個月現金流狀況，標記資金風險')
     .row()
-    .text('📈 KPI 儀表板', 'fin_kpi')
-    .text('🧾 稅務摘要', 'fin_tax')
+    .switchInlineCurrent('📈 KPI', '@NPSfiance_bot 產出本月財務健康KPI，含毛利率、淨利率、應收帳款週轉率')
+    .switchInlineCurrent('🧾 稅務摘要', '@NPSfiance_bot 整理本期稅務摘要，統計進項發票可扣抵稅額')
     .row()
-    .text('⚠️ 費用異常', 'fin_alert')
-    .text('💼 專案財務', 'fin_project')
+    .switchInlineCurrent('⚠️ 費用異常', '@NPSfiance_bot 檢查近期有無異常費用，對比歷史平均找出偏差')
+    .switchInlineCurrent('💼 專案財務', '@NPSfiance_bot 分析進行中專案的財務狀況，含成本結構和利潤率')
     .row()
     .text('◀ 返回主面板', 'panel_back');
-  await ctx.reply('💰 財務分析 — 選擇報告：', { reply_markup: kb });
-});
-
-bot.callbackQuery('fin_monthly', async (ctx) => {
-  await ctx.answerCallbackQuery();
-  await ctx.reply('@NPSfiance_bot 請產出上個月的完整財務報告，包含分類統計、公司進項、預算對比和異常標記。');
-});
-bot.callbackQuery('fin_cashflow', async (ctx) => {
-  await ctx.answerCallbackQuery();
-  await ctx.reply('@NPSfiance_bot 請預測未來 3 個月的現金流狀況，標記可能的資金風險。');
-});
-bot.callbackQuery('fin_kpi', async (ctx) => {
-  await ctx.answerCallbackQuery();
-  await ctx.reply('@NPSfiance_bot 請產出本月的財務健康 KPI 儀表板，包含毛利率、淨利率、應收帳款週轉率。');
-});
-bot.callbackQuery('fin_tax', async (ctx) => {
-  await ctx.answerCallbackQuery();
-  await ctx.reply('@NPSfiance_bot 請整理本期的稅務摘要，統計進項發票可扣抵稅額，標記缺漏。');
-});
-bot.callbackQuery('fin_alert', async (ctx) => {
-  await ctx.answerCallbackQuery();
-  await ctx.reply('@NPSfiance_bot 請檢查近期有無異常費用，對比歷史平均找出偏差過大的項目。');
-});
-bot.callbackQuery('fin_project', async (ctx) => {
-  await ctx.answerCallbackQuery();
-  await ctx.reply('@NPSfiance_bot 請分析目前進行中專案的財務狀況，包含成本結構、利潤率和預算執行率。');
+  await ctx.reply('💰 財務分析 — 點擊後在輸入框編輯發送：', { reply_markup: kb });
 });
 
 // === Back to main panel ===
