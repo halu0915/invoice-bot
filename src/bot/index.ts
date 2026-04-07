@@ -593,52 +593,85 @@ bot.callbackQuery('panel_listall', async (ctx) => {
 // === CEO Sub-menu ===
 bot.callbackQuery('panel_ceo', async (ctx) => {
   await ctx.answerCallbackQuery();
-  const kb = new InlineKeyboard()
-    .switchInlineCurrent('📋 每日匯報', '@NPlusStarBot 請做今日工作匯報，彙整各部門進度和待辦事項')
-    .switchInlineCurrent('📊 營運分析', '@NPlusStarBot 請分析公司目前營運狀況，包括專案進度、財務健康、潛在風險')
-    .row()
-    .switchInlineCurrent('💼 投標評估', '@NPlusStarBot 請評估是否值得投標，從技術、財務、競爭三個角度分析')
-    .switchInlineCurrent('⚡ 緊急事項', '@NPlusStarBot 列出目前需要緊急處理的前3件事和建議行動')
-    .row()
-    .switchInlineCurrent('🎯 策略建議', '@NPlusStarBot 根據目前市場和公司資源，給出下個月策略方向')
-    .switchInlineCurrent('📋 週計畫', '@NPlusStarBot 請幫我規劃本週工作重點，給出優先級排序')
-    .row()
-    .text('◀ 返回主面板', 'panel_back');
-  await ctx.reply('🤖 CEO 總管 — 點擊後在輸入框編輯發送：', { reply_markup: kb });
+  await ctx.reply(
+`🤖 CEO 總管 @NPlusStarBot
+
+直接複製發送以下指令：
+
+📋 每日匯報
+@NPlusStarBot 請做今日工作匯報，彙整各部門進度和待辦事項
+
+📊 營運分析
+@NPlusStarBot 請分析公司目前營運狀況，包括專案進度、財務健康、潛在風險
+
+💼 投標評估
+@NPlusStarBot 請評估是否值得投標，從技術、財務、競爭三個角度分析
+
+⚡ 緊急事項
+@NPlusStarBot 列出目前需要緊急處理的前3件事和建議行動
+
+🎯 策略建議
+@NPlusStarBot 根據目前市場和公司資源，給出下個月策略方向
+
+📋 週計畫
+@NPlusStarBot 請幫我規劃本週工作重點，給出優先級排序`
+  );
 });
 
 // === Intelligence Sub-menu ===
 bot.callbackQuery('panel_intel', async (ctx) => {
   await ctx.answerCallbackQuery();
-  const kb = new InlineKeyboard()
-    .switchInlineCurrent('📢 今日標案', '@NPSinteligence_bot 搜尋今天最新的消防、機電、水電公共工程標案')
-    .switchInlineCurrent('🏗️ 消防標案', '@NPSinteligence_bot 搜尋近期消防工程標案，預算300萬以上，北部優先')
-    .row()
-    .switchInlineCurrent('📈 市場趨勢', '@NPSinteligence_bot 分析目前MEP工程市場趨勢，價格走勢和需求變化')
-    .switchInlineCurrent('🔎 競爭動態', '@NPSinteligence_bot 分析主要競爭對手的近期動態和策略')
-    .row()
-    .switchInlineCurrent('🗞️ 產業新聞', '@NPSinteligence_bot 整理本週消防工程、建築法規、公共工程相關重要新聞')
-    .switchInlineCurrent('💡 商機分析', '@NPSinteligence_bot 分析目前有哪些潛在商機值得公司關注和跟進')
-    .row()
-    .text('◀ 返回主面板', 'panel_back');
-  await ctx.reply('🔍 情報中心 — 點擊後在輸入框編輯發送：', { reply_markup: kb });
+  await ctx.reply(
+`🔍 情報中心 @NPSinteligence_bot
+
+直接複製發送以下指令：
+
+📢 今日標案
+@NPSinteligence_bot 搜尋今天最新的消防、機電、水電公共工程標案
+
+🏗️ 消防標案
+@NPSinteligence_bot 搜尋近期消防工程標案，預算300萬以上，北部優先
+
+📈 市場趨勢
+@NPSinteligence_bot 分析目前MEP工程市場趨勢，價格走勢和需求變化
+
+🔎 競爭動態
+@NPSinteligence_bot 分析主要競爭對手的近期動態和策略
+
+🗞️ 產業新聞
+@NPSinteligence_bot 整理本週消防工程、建築法規、公共工程相關重要新聞
+
+💡 商機分析
+@NPSinteligence_bot 分析目前有哪些潛在商機值得公司關注和跟進`
+  );
 });
 
 // === Finance Sub-menu ===
 bot.callbackQuery('panel_fin', async (ctx) => {
   await ctx.answerCallbackQuery();
-  const kb = new InlineKeyboard()
-    .switchInlineCurrent('📊 月度財報', '@NPSfiance_bot 產出上個月完整財務報告，含分類統計、公司進項、預算對比')
-    .switchInlineCurrent('💵 現金流', '@NPSfiance_bot 預測未來3個月現金流狀況，標記資金風險')
-    .row()
-    .switchInlineCurrent('📈 KPI', '@NPSfiance_bot 產出本月財務健康KPI，含毛利率、淨利率、應收帳款週轉率')
-    .switchInlineCurrent('🧾 稅務摘要', '@NPSfiance_bot 整理本期稅務摘要，統計進項發票可扣抵稅額')
-    .row()
-    .switchInlineCurrent('⚠️ 費用異常', '@NPSfiance_bot 檢查近期有無異常費用，對比歷史平均找出偏差')
-    .switchInlineCurrent('💼 專案財務', '@NPSfiance_bot 分析進行中專案的財務狀況，含成本結構和利潤率')
-    .row()
-    .text('◀ 返回主面板', 'panel_back');
-  await ctx.reply('💰 財務分析 — 點擊後在輸入框編輯發送：', { reply_markup: kb });
+  await ctx.reply(
+`💰 財務分析 @NPSfiance_bot
+
+直接複製發送以下指令：
+
+📊 月度財報
+@NPSfiance_bot 產出上個月完整財務報告，含分類統計、公司進項、預算對比
+
+💵 現金流預測
+@NPSfiance_bot 預測未來3個月現金流狀況，標記資金風險
+
+📈 KPI 儀表板
+@NPSfiance_bot 產出本月財務健康KPI，含毛利率、淨利率、應收帳款週轉率
+
+🧾 稅務摘要
+@NPSfiance_bot 整理本期稅務摘要，統計進項發票可扣抵稅額
+
+⚠️ 費用異常
+@NPSfiance_bot 檢查近期有無異常費用，對比歷史平均找出偏差
+
+💼 專案財務
+@NPSfiance_bot 分析進行中專案的財務狀況，含成本結構和利潤率`
+  );
 });
 
 // === Back to main panel ===
