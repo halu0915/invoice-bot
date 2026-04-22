@@ -20,6 +20,9 @@ if (!token) {
 
 const bot = new Bot(token);
 
+// Temporary storage for duplicate invoice OCR results (pending user decision)
+const pendingDuplicates = new Map<string, { ocrResult: any; userId: string; userName: string }>();
+
 // /start command
 bot.command('start', async (ctx) => {
   await ctx.reply(
@@ -304,6 +307,89 @@ bot.command('range', async (ctx) => {
   await ctx.reply(msg);
 });
 
+// Callback: delete invoice from inline button
+bot.callbackQuery(/^del_(\d+)$/, async (ctx) => {
+  const invoiceId = parseInt(ctx.match![1], 10);
+  const currentUserId = ctx.from?.id?.toString() || '';
+  const invoice = getInvoiceById(invoiceId);
+
+  if (!invoice) {
+    await ctx.editMessageText(`❌ 找不到 ID 為 ${invoiceId} 的發票`);
+    await ctx.answerCallbackQuery();
+    return;
+  }
+
+  if (invoice.user_id !== currentUserId) {
+    await ctx.answerCallbackQuery({ text: '❌ 你只能刪除自己上傳的發票' });
+    return;
+  }
+
+  const success = deleteInvoice(invoiceId);
+  if (success) {
+    await ctx.editMessageText(`🗑️ 已刪除發票 #${invoiceId}（${invoice.vendor} $${invoice.amount.toLocaleString()}）`);
+  } else {
+    await ctx.editMessageText(`❌ 刪除發票 #${invoiceId} 時發生錯誤`);
+  }
+  await ctx.answerCallbackQuery();
+});
+
+// Callback: duplicate invoice - replace old with new
+bot.callbackQuery(/^dup_replace_(\d+)_(.+)$/, async (ctx) => {
+  const oldId = parseInt(ctx.match![1], 10);
+  const filePath = ctx.match![2];
+  const pending = pendingDuplicates.get(filePath);
+
+  if (!pending) {
+    await ctx.editMessageText('⚠️ 資料已過期，請重新上傳發票');
+    await ctx.answerCallbackQuery();
+    return;
+  }
+
+  // Delete old invoice
+  deleteInvoice(oldId);
+
+  // Insert new invoice
+  const { ocrResult, userId, userName } = pending;
+  const id = insertInvoice({
+    image_path: filePath,
+    date: ocrResult.date,
+    vendor: ocrResult.vendor,
+    tax_id: ocrResult.tax_id,
+    amount: ocrResult.amount,
+    tax_amount: ocrResult.tax_amount,
+    pretax_amount: ocrResult.pretax_amount,
+    category: ocrResult.category,
+    items: JSON.stringify(ocrResult.items),
+    invoice_number: ocrResult.invoice_number,
+    is_company: !!ocrResult.tax_id,
+    note: '',
+    user_id: userId,
+    user_name: userName,
+  });
+
+  pendingDuplicates.delete(filePath);
+
+  const companyTag = ocrResult.tax_id ? `\n🏢 公司進項（統編：${ocrResult.tax_id}）` : '';
+  await ctx.editMessageText(
+    `✅ 已刪除舊發票 #${oldId}，重新建檔 #${id}\n\n` +
+    `📅 ${ocrResult.date} | 🏪 ${ocrResult.vendor}\n` +
+    `💰 $${ocrResult.amount.toLocaleString()} | 📂 ${ocrResult.category}${companyTag}`
+  );
+  await ctx.answerCallbackQuery();
+});
+
+// Callback: duplicate invoice - cancel upload
+bot.callbackQuery(/^dup_cancel_(.+)$/, async (ctx) => {
+  const filePath = ctx.match![1];
+  pendingDuplicates.delete(filePath);
+
+  // Clean up the uploaded file
+  try { fs.unlinkSync(filePath); } catch {}
+
+  await ctx.editMessageText('❌ 已取消，未上傳重複發票');
+  await ctx.answerCallbackQuery();
+});
+
 // Callback query handler for category changes
 bot.callbackQuery(/^cat_(\d+)_(.+)$/, async (ctx) => {
   const match = ctx.match!;
@@ -342,7 +428,21 @@ bot.on('message:photo', async (ctx) => {
     if (ocrResult.invoice_number) {
       const existing = findByInvoiceNumber(ocrResult.invoice_number);
       if (existing) {
-        await ctx.reply(`⚠️ 重複發票！發票號碼 ${ocrResult.invoice_number} 已存在（#${existing.id}，由 ${existing.user_name} 於 ${existing.date} 上傳）。本次不上傳。`);
+        const dupKeyboard = new InlineKeyboard()
+          .text('🗑️ 刪除舊的，重新建檔', `dup_replace_${existing.id}_${filePath}`)
+          .row()
+          .text('❌ 取消，不上傳', `dup_cancel_${filePath}`);
+
+        await ctx.reply(
+          `⚠️ 重複發票！\n\n` +
+          `發票號碼 ${ocrResult.invoice_number} 已存在：\n` +
+          `#${existing.id} | ${existing.date} | ${existing.vendor} | $${existing.amount.toLocaleString()}\n` +
+          `上傳者：${existing.user_name}\n\n` +
+          `請選擇處理方式：`,
+          { reply_markup: dupKeyboard }
+        );
+        // Store OCR result temporarily for potential re-insert
+        pendingDuplicates.set(filePath, { ocrResult, userId: ctx.from?.id?.toString() || '', userName: ((ctx.from?.first_name || '') + ' ' + (ctx.from?.last_name || '')).trim() });
         return;
       }
     }
@@ -393,6 +493,7 @@ bot.on('message:photo', async (ctx) => {
       .text('交通', `cat_${id}_交通`)
       .text('辦公用品', `cat_${id}_辦公用品`)
       .text('日用品', `cat_${id}_日用品`)
+      .text('🗑️ 刪除', `del_${id}`)
       .text('其他', `cat_${id}_其他`);
 
     await ctx.reply(msg, { reply_markup: keyboard });
@@ -431,7 +532,20 @@ bot.on('message:document', async (ctx) => {
     if (ocrResult.invoice_number) {
       const existing = findByInvoiceNumber(ocrResult.invoice_number);
       if (existing) {
-        await ctx.reply(`⚠️ 重複發票！發票號碼 ${ocrResult.invoice_number} 已存在（#${existing.id}，由 ${existing.user_name} 於 ${existing.date} 上傳）。本次不上傳。`);
+        const dupKeyboard = new InlineKeyboard()
+          .text('🗑️ 刪除舊的，重新建檔', `dup_replace_${existing.id}_${filePath}`)
+          .row()
+          .text('❌ 取消，不上傳', `dup_cancel_${filePath}`);
+
+        await ctx.reply(
+          `⚠️ 重複發票！\n\n` +
+          `發票號碼 ${ocrResult.invoice_number} 已存在：\n` +
+          `#${existing.id} | ${existing.date} | ${existing.vendor} | $${existing.amount.toLocaleString()}\n` +
+          `上傳者：${existing.user_name}\n\n` +
+          `請選擇處理方式：`,
+          { reply_markup: dupKeyboard }
+        );
+        pendingDuplicates.set(filePath, { ocrResult, userId: ctx.from?.id?.toString() || '', userName: ((ctx.from?.first_name || '') + ' ' + (ctx.from?.last_name || '')).trim() });
         return;
       }
     }
@@ -462,6 +576,7 @@ bot.on('message:document', async (ctx) => {
       .text('交通', `cat_${id}_交通`)
       .text('辦公用品', `cat_${id}_辦公用品`)
       .text('日用品', `cat_${id}_日用品`)
+      .text('🗑️ 刪除', `del_${id}`)
       .text('其他', `cat_${id}_其他`);
 
     await ctx.reply(

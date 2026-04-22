@@ -18,7 +18,10 @@ let db: Database.Database;
 export function getDb(): Database.Database {
   if (!db) {
     db = new Database(DB_PATH);
-    db.pragma('journal_mode = WAL');
+    db.pragma('journal_mode = DELETE');
+    // Auto-fix invalid dates on startup
+    const fixed = db.prepare("UPDATE invoices SET date = '2026' || substr(date, 5) WHERE date LIKE '28%' OR date LIKE '29%' OR date LIKE '30%'").run();
+    if (fixed.changes > 0) console.log(`Auto-fixed ${fixed.changes} invoices with invalid dates`);
     db.exec(CREATE_INVOICES_TABLE);
     db.exec(CREATE_INDEX_DATE);
     db.exec(CREATE_INDEX_CATEGORY);
@@ -49,6 +52,8 @@ export function insertInvoice(data: Omit<Invoice, 'id' | 'created_at'>): number 
     ...data,
     is_company: data.is_company ? 1 : 0,
   });
+  // Force sync to disk to prevent data loss on container restart
+  db.pragma('wal_checkpoint(FULL)');
   return result.lastInsertRowid as number;
 }
 
@@ -170,6 +175,25 @@ export function findByInvoiceNumber(invoiceNumber: string): Invoice | null {
   const row = stmt.get({ invoiceNumber }) as Invoice | undefined;
   if (!row) return null;
   return { ...row, is_company: Boolean(row.is_company) };
+}
+
+export function updateInvoiceDate(id: number, date: string): boolean {
+  const db = getDb();
+  const stmt = db.prepare('UPDATE invoices SET date = @date WHERE id = @id');
+  const result = stmt.run({ id, date });
+  db.pragma('wal_checkpoint(FULL)');
+  return result.changes > 0;
+}
+
+export function fixInvalidDates(): number {
+  const db = getDb();
+  // Fix dates with wrong century (e.g., 2826 → 2026)
+  const result = db.prepare("UPDATE invoices SET date = '2026' || substr(date, 5) WHERE date LIKE '28%' OR date LIKE '29%' OR date LIKE '30%'").run();
+  if (result.changes > 0) {
+    db.pragma('wal_checkpoint(FULL)');
+    console.log(`Fixed ${result.changes} invoices with invalid dates`);
+  }
+  return result.changes;
 }
 
 export function updateInvoiceCategory(id: number, category: string): boolean {

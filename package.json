@@ -14,7 +14,8 @@
     "start": "concurrently \"node --import tsx/esm src/bot/index.ts\" \"node --import tsx/esm src/api/index.ts\"",
     "start:bot": "node dist/bot/index.js",
     "start:api": "node dist/api/index.js",
-    "dev:ceo": "node --env-file=.env --import tsx/esm src/ceo-bot/index.ts"
+    "dev:ceo": "node --env-file=.env --import tsx/esm src/ceo-bot/index.ts",
+    "dev:bridge": "node --env-file=.env --import tsx/esm src/agent-bridge/index.ts"
   },
   "dependencies": {
     "@hono/node-server": "^1.13.0",

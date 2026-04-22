@@ -62,6 +62,10 @@ function parseInvoiceText(text: string): OcrResult {
       const day = parseInt(match[3], 10);
       // ROC year conversion
       if (year < 200) year += 1911;
+      // Validate year is reasonable (2020-2030)
+      if (year < 2020 || year > 2030) year = new Date().getFullYear();
+      if (month < 1 || month > 12) continue;
+      if (day < 1 || day > 31) continue;
       date = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
       break;
     }
