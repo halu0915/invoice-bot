@@ -10,19 +10,40 @@ interface StatsCardsProps {
   stats: Stats | null;
 }
 
-interface CardProps {
+function Card({
+  label,
+  value,
+  sub,
+  highlight,
+}: {
   label: string;
   value: string;
   sub?: string;
-  color: string;
-}
-
-function Card({ label, value, sub, color }: CardProps) {
+  highlight?: boolean;
+}) {
+  if (highlight) {
+    return (
+      <div className="relative overflow-hidden rounded-xl border border-[#10243e] bg-[#10243e] p-5 shadow-sm">
+        <p className="text-[12px] font-medium tracking-wider text-[#a9c2dc]">
+          {label}
+        </p>
+        <p className="num mt-2 text-[28px] font-black leading-none text-[#f5c26b]">
+          {value}
+        </p>
+        {sub && <p className="mt-2 text-[12px] text-[#8fa8c4]">{sub}</p>}
+        <div className="pointer-events-none absolute -right-6 -top-8 h-24 w-24 rounded-full bg-[#f5c26b]/10" />
+      </div>
+    );
+  }
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-      <p className="text-sm font-medium text-gray-500">{label}</p>
-      <p className={`mt-2 text-2xl font-bold ${color}`}>{value}</p>
-      {sub && <p className="mt-1 text-xs text-gray-400">{sub}</p>}
+    <div className="rounded-xl border border-[#dfe4ea] bg-white p-5 shadow-sm">
+      <p className="text-[12px] font-medium tracking-wider text-[#7186a0]">
+        {label}
+      </p>
+      <p className="num mt-2 text-[28px] font-black leading-none text-[#16202e]">
+        {value}
+      </p>
+      {sub && <p className="mt-2 text-[12px] text-[#96a5b8]">{sub}</p>}
     </div>
   );
 }
@@ -32,10 +53,7 @@ export default function StatsCards({ stats }: StatsCardsProps) {
     return (
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div
-            key={i}
-            className="h-28 animate-pulse rounded-xl bg-gray-100"
-          />
+          <div key={i} className="h-28 animate-pulse rounded-xl bg-[#e4eaf0]" />
         ))}
       </div>
     );
@@ -44,27 +62,25 @@ export default function StatsCards({ stats }: StatsCardsProps) {
   return (
     <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
       <Card
-        label="總發票數量"
+        label="發票數量"
         value={fmt(stats.total.count)}
-        sub="張發票"
-        color="text-gray-900"
+        sub="本期收錄張數"
       />
       <Card
         label="總金額"
         value={`$${fmt(stats.total.total_amount)}`}
-        sub={`稅額 $${fmt(stats.total.total_tax)}`}
-        color="text-blue-600"
+        sub={`含稅額 $${fmt(stats.total.total_tax)}`}
       />
       <Card
-        label="公司進項金額"
+        label="公司進項"
         value={`$${fmt(stats.company.total_amount)}`}
-        sub={`${fmt(stats.company.count)} 張`}
-        color="text-emerald-600"
+        sub={`${fmt(stats.company.count)} 張標記為進項`}
       />
       <Card
         label="可扣抵稅額"
         value={`$${fmt(stats.company.total_tax)}`}
-        color="text-amber-600"
+        sub="申報時直接引用"
+        highlight
       />
     </div>
   );

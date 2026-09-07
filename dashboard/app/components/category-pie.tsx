@@ -11,15 +11,15 @@ interface CategoryPieProps {
 }
 
 const PIE_COLORS = [
-  "#ef4444", // red-500
-  "#3b82f6", // blue-500
-  "#eab308", // yellow-500
-  "#10b981", // emerald-500
-  "#a855f7", // purple-500
-  "#ec4899", // pink-500
-  "#f97316", // orange-500
-  "#14b8a6", // teal-500
-  "#6b7280", // gray-500
+  "#c05b4d",
+  "#1f5c99",
+  "#b8860b",
+  "#2e7d5b",
+  "#5b5ea6",
+  "#a86b8c",
+  "#c98a3d",
+  "#3a8ea5",
+  "#7186a0",
 ];
 
 function fmt(n: number): string {

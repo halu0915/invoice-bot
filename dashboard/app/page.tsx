@@ -117,17 +117,22 @@ export default function Home() {
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
       {/* Header */}
-      <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-2xl font-bold tracking-tight text-gray-900">
-          發票管理面板
-        </h1>
+      <div className="mb-6 flex flex-col gap-4 rounded-xl border border-[#dfe4ea] bg-white px-5 py-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-xl font-black tracking-tight text-[#10243e]">
+            進項總覽
+          </h1>
+          <p className="mt-0.5 text-[12.5px] text-[#7186a0]">
+            拍照上傳 → OCR 建檔 → 這裡看帳
+          </p>
+        </div>
 
         {/* Filters row */}
         <div className="flex flex-wrap items-center gap-3">
           <select
             value={selectedUserId}
             onChange={(e) => setSelectedUserId(e.target.value)}
-            className="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
+            className="rounded-lg border border-[#c4ccd6] bg-white px-3 py-1.5 text-sm font-medium text-[#3d4c60] transition-colors hover:border-[#10243e] hover:text-[#10243e]"
           >
             <option value="">全部使用者</option>
             {users.map((u) => (
@@ -142,14 +147,14 @@ export default function Home() {
               <button
                 type="button"
                 onClick={prevMonth}
-                className="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
+                className="rounded-lg border border-[#c4ccd6] bg-white px-3 py-1.5 text-sm font-medium text-[#3d4c60] transition-colors hover:border-[#10243e] hover:text-[#10243e]"
               >
                 &larr;
               </button>
               <select
                 value={year}
                 onChange={(e) => setYear(parseInt(e.target.value, 10))}
-                className="rounded-lg border border-gray-300 bg-white px-2 py-1.5 text-sm font-semibold text-gray-800"
+                className="rounded-lg border border-[#c4ccd6] bg-white px-2 py-1.5 text-sm font-semibold text-[#16202e]"
               >
                 {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - 2 + i).map((y) => (
                   <option key={y} value={y}>{y} 年</option>
@@ -161,7 +166,7 @@ export default function Home() {
           <select
             value={month}
             onChange={(e) => setMonth(parseInt(e.target.value, 10))}
-            className="rounded-lg border border-gray-300 bg-white px-2 py-1.5 text-sm font-semibold text-gray-800"
+            className="rounded-lg border border-[#c4ccd6] bg-white px-2 py-1.5 text-sm font-semibold text-[#16202e]"
           >
             <option value={0}>全年度</option>
             {MONTH_LABELS.slice(1).map((label, i) => (
@@ -174,7 +179,7 @@ export default function Home() {
             <button
               type="button"
               onClick={nextMonth}
-              className="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
+              className="rounded-lg border border-[#c4ccd6] bg-white px-3 py-1.5 text-sm font-medium text-[#3d4c60] transition-colors hover:border-[#10243e] hover:text-[#10243e]"
             >
               &rarr;
             </button>
@@ -186,14 +191,14 @@ export default function Home() {
                 type="date"
                 value={customStart}
                 onChange={(e) => setCustomStart(e.target.value)}
-                className="rounded-lg border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-800"
+                className="rounded-lg border border-[#c4ccd6] bg-white px-2 py-1.5 text-sm text-[#16202e]"
               />
               <span className="text-sm text-gray-500">~</span>
               <input
                 type="date"
                 value={customEnd}
                 onChange={(e) => setCustomEnd(e.target.value)}
-                className="rounded-lg border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-800"
+                className="rounded-lg border border-[#c4ccd6] bg-white px-2 py-1.5 text-sm text-[#16202e]"
               />
             </>
           )}
@@ -209,7 +214,7 @@ export default function Home() {
               }
             }}
             disabled={!invoices || invoices.length === 0}
-            className="rounded-lg border border-blue-300 bg-blue-50 px-3 py-1.5 text-sm font-medium text-blue-700 transition-colors hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-40"
+            className="rounded-lg bg-[#10243e] px-4 py-1.5 text-sm font-semibold text-[#f5c26b] shadow-sm transition-all hover:-translate-y-px hover:shadow disabled:cursor-not-allowed disabled:opacity-40"
           >
             下載 CSV
           </button>
@@ -230,8 +235,8 @@ export default function Home() {
 
       {/* Category chart */}
       <section className="mb-8">
-        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-          <h2 className="mb-4 text-lg font-semibold text-gray-800">
+        <div className="rounded-xl border border-[#dfe4ea] bg-white p-5 shadow-sm">
+          <h2 className="mb-4 text-[15px] font-bold tracking-wide text-[#10243e]">
             分類統計
           </h2>
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -243,7 +248,7 @@ export default function Home() {
 
       {/* Invoice table */}
       <section>
-        <h2 className="mb-4 text-lg font-semibold text-gray-800">
+        <h2 className="mb-4 text-[15px] font-bold tracking-wide text-[#10243e]">
           發票明細
         </h2>
         <InvoiceTable invoices={invoices} onDeleted={loadData} />

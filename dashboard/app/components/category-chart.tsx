@@ -3,15 +3,15 @@
 import type { CategoryBreakdown } from "@/app/lib/api";
 
 const COLORS: Record<string, string> = {
-  餐飲: "bg-red-500",
-  交通: "bg-blue-500",
-  辦公用品: "bg-yellow-500",
-  水電費: "bg-emerald-500",
-  電信費: "bg-purple-500",
-  日用品: "bg-pink-500",
-  娛樂: "bg-orange-500",
-  醫療: "bg-teal-500",
-  其他: "bg-gray-500",
+  餐飲: "bg-[#c05b4d]",
+  交通: "bg-[#1f5c99]",
+  辦公用品: "bg-[#b8860b]",
+  水電費: "bg-[#2e7d5b]",
+  電信費: "bg-[#5b5ea6]",
+  日用品: "bg-[#a86b8c]",
+  娛樂: "bg-[#c98a3d]",
+  醫療: "bg-[#3a8ea5]",
+  其他: "bg-[#7186a0]",
 };
 
 interface CategoryChartProps {

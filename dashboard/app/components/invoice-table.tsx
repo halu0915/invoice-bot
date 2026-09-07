@@ -171,10 +171,10 @@ export default function InvoiceTable({
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white shadow-sm">
+      <div className="overflow-x-auto rounded-xl border border-[#dfe4ea] bg-white shadow-sm">
         <table className="w-full text-left text-sm">
           <thead>
-            <tr className="border-b border-gray-100 bg-gray-50 text-xs uppercase text-gray-500">
+            <tr className="border-b border-[#dfe4ea] bg-[#f7f9fb] text-xs uppercase tracking-wider text-[#7186a0]">
               <th className="px-4 py-3 text-center">圖片</th>
               <SortTh field="id" label="ID" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
               <SortTh field="date" label="日期" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
@@ -204,24 +204,24 @@ export default function InvoiceTable({
             {filtered?.map((inv) => (
               <tr
                 key={inv.id}
-                className="border-b border-gray-50 transition-colors hover:bg-gray-50"
+                className="border-b border-[#eef2f6] transition-colors hover:bg-[#f0f5fa]"
               >
                 <td className="px-4 py-3 text-center">
                   <button
                     type="button"
                     onClick={() => setPreviewId(inv.id)}
-                    className="text-blue-500 hover:text-blue-700 text-xs"
+                    className="text-[#1f5c99] hover:text-[#10243e] text-xs font-medium"
                     title="查看發票圖片"
                   >
                     📷
                   </button>
                 </td>
-                <td className="px-4 py-3 font-mono text-gray-400">{inv.id}</td>
+                <td className="px-4 py-3 font-mono text-xs text-[#96a5b8]">{inv.id}</td>
                 <td className="px-4 py-3 whitespace-nowrap">{inv.date}</td>
                 <td className="px-4 py-3 max-w-[200px] truncate" title={inv.vendor}>
                   {inv.vendor}
                 </td>
-                <td className="px-4 py-3 text-right font-mono">
+                <td className="num px-4 py-3 text-right font-semibold">
                   ${fmt(inv.amount)}
                 </td>
                 <td className="px-4 py-3">
@@ -235,7 +235,7 @@ export default function InvoiceTable({
                         alert("更新分類失敗");
                       }
                     }}
-                    className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600 border-none cursor-pointer hover:bg-gray-200"
+                    className="rounded-full bg-[#eef2f6] px-2 py-0.5 text-xs font-medium text-[#3d4c60] border-none cursor-pointer hover:bg-[#dfe8f0]"
                   >
                     {CATEGORIES.map((c) => (
                       <option key={c} value={c}>{c}</option>
@@ -247,7 +247,7 @@ export default function InvoiceTable({
                 </td>
                 <td className="px-4 py-3 text-center">
                   {inv.is_company ? (
-                    <span className="inline-block rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-700">
+                    <span className="inline-block rounded-full border border-[#bcd9ca] bg-[#e7f2ec] px-2.5 py-0.5 text-xs font-semibold text-[#1d5c40]">
                       公司
                     </span>
                   ) : (

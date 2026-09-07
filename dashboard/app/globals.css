@@ -1,19 +1,32 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f9fafb;
-  --foreground: #111827;
+  --background: #f2f5f8;
+  --foreground: #16202e;
+  --navy: #10243e;
+  --gold: #b8860b;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-noto-sans);
   --font-mono: var(--font-geist-mono);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), "PingFang TC", "Noto Sans TC", sans-serif;
+}
+
+/* 金額與數字欄位一律等寬數字，掃讀對齊 */
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+/* 原生控制項統一質感 */
+select,
+input[type="date"] {
+  accent-color: var(--navy);
 }
